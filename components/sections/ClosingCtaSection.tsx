@@ -81,7 +81,7 @@ export function ClosingCtaSection() {
         >
           <h2
             id="closing-cta-heading"
-            className={`font-editorial whitespace-nowrap pb-1 font-semibold italic leading-[1.1] tracking-[0.015em] text-forest ${
+            className={`font-didone whitespace-nowrap pb-1 font-black tracking-tight text-forest ${
               showPhoto
                 ? "text-[clamp(1.85rem,10vw,3rem)] lg:text-6xl xl:text-7xl"
                 : "text-[clamp(1.85rem,11vw,3rem)] sm:text-7xl md:text-8xl"

@@ -149,6 +149,10 @@ export function SiteEditorForm({
           >
             {editor.loading ? "Saving…" : "Save site content"}
           </AnimatedButton>
+          <p className="mt-2 max-w-md text-xs text-muted">
+            Saves writing and settings. A video or photo is on the site only
+            after its upload finishes.
+          </p>
           <div className="mt-3 max-h-56 overflow-y-auto">
             <RevisionHistory<SiteContent>
               endpoint="/api/site/revisions"

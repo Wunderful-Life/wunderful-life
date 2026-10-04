@@ -53,7 +53,7 @@ export function BrandsBanner() {
         <SectionReveal variant="fadeUp" className="mx-auto max-w-2xl text-center">
           <h2
             id="brands-heading"
-            className="brands-heading font-editorial text-[2.1rem] text-forest sm:text-6xl"
+            className="font-didone text-3xl font-black tracking-tight text-forest sm:text-5xl"
           >
             {heading}
           </h2>

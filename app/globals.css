@@ -155,15 +155,6 @@ body {
   font-variation-settings: "opsz" 14, "wght" 900;
 }
 
-/*
- * Brands heading sits alone above the logo row. Cormorant stays at a medium
- * weight with open tracking so the line reads as editorial, not a blunt title.
- */
-.brands-heading {
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  line-height: 1.15;
-}
 
 /*
  * Keep looping videos on a GPU layer at device resolution. Parent transforms,
@@ -979,7 +970,7 @@ body {
 }
 
 /*
- * Photography title: editorial serif spines on wide frames, centered
+ * Photography title: Bodoni spines on wide frames, centered
  * heading when the word cannot sit beside the collage.
  */
 .photography-shell {
@@ -998,12 +989,13 @@ body {
 
 .photography-word,
 .photography-word-measure {
-  font-family: var(--font-editorial), Georgia, serif;
+  font-family: var(--font-didone), "Bodoni Moda", serif;
   font-size: var(--photography-word-size);
-  font-style: italic;
-  font-weight: 600;
-  letter-spacing: 0.015em;
-  line-height: 1.1;
+  font-optical-sizing: none;
+  font-weight: 900;
+  font-variation-settings: "opsz" 14, "wght" 900;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
   color: var(--forest);
 }
 

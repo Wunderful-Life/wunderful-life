@@ -44,6 +44,9 @@ export function VideoSlotField({
 }) {
   const { noun, hint } = videoSlotDescriptor(slot);
   const busy = isMediaUploadBusy(state);
+  const replacementFailed = state.status === "error";
+  const showingPublishedVideo =
+    Boolean(videoPath) && !file && !busy && !replacementFailed;
 
   return (
     <>
@@ -77,10 +80,15 @@ export function VideoSlotField({
           indeterminate={state.status === "preparing"}
         />
       )}
-      {videoPath && !busy && (
-        <LiveOnSiteNote>
-          Live on your site — no Save needed
-        </LiveOnSiteNote>
+      {replacementFailed && (
+        <p className="mt-2 text-xs text-muted">
+          {videoPath
+            ? "This file is not on your site. The current video is unchanged."
+            : "This file is not on your site."}
+        </p>
+      )}
+      {showingPublishedVideo && (
+        <LiveOnSiteNote>Live on your site</LiveOnSiteNote>
       )}
     </>
   );

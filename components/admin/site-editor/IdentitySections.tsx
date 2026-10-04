@@ -187,8 +187,9 @@ export function HeroEditor({
         <p className="text-sm text-muted">
           The cutout standing in the intro. A PNG with a transparent background
           is highly suggested so the silhouette and forest belt sit cleanly
-          behind the figure. Goes live as soon as you pick a file — no need to
-          press &ldquo;Save site content&rdquo;.
+          behind the figure. It replaces the photo on the site only after the
+          upload finishes. Writing on this page still needs &ldquo;Save site
+          content&rdquo;.
         </p>
         <div className="block text-sm">
           <span className="text-muted">Photo</span>
@@ -243,8 +244,9 @@ export function HeroEditor({
           Background video
         </p>
         <p className="text-sm text-muted">
-          Goes live as soon as you pick a file — no need to press &ldquo;Save
-          site content&rdquo;. Use the original 1080p (or higher) file so it
+          It replaces the video on the site only after the upload finishes.
+          Writing on this page still needs &ldquo;Save site content&rdquo;.
+          Use the original 1080p (or higher) file so it
           stays sharp. Clips loop and can be up to one minute. On phones,
           portrait clips lengthen the hero so the full frame stays visible.
           On a wide screen they fill the viewport height. Landscape clips
