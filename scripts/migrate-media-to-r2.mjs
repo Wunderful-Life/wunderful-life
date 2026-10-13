@@ -13,6 +13,8 @@
  * Required env (scripts/.env.r2.local, .env.local, or the shell):
  *   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET,
  *   R2_PUBLIC_BASE_URL
+ * Optional: SUPABASE_MEDIA_PREFIX, the public Storage prefix stored in the
+ * live rows. Defaults to the original project.
  */
 import { HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
@@ -54,8 +56,10 @@ if (missing.length > 0) {
 
 const BUCKET = process.env.R2_BUCKET.trim();
 const PUBLIC_BASE = process.env.R2_PUBLIC_BASE_URL.trim().replace(/\/+$/, "");
-const SUPABASE_PREFIX =
-  "https://ltrldffckmplvmyonhwc.supabase.co/storage/v1/object/public/site-media/";
+const SUPABASE_PREFIX = (
+  process.env.SUPABASE_MEDIA_PREFIX?.trim() ||
+  "https://ltrldffckmplvmyonhwc.supabase.co/storage/v1/object/public/site-media/"
+).replace(/\/+$/, "/");
 const CACHE_CONTROL = "public, max-age=31536000, immutable";
 
 const CONTENT_TYPES = {
@@ -184,9 +188,24 @@ console.log(`\nCopied and verified ${results.length}/${objects.length} files.`);
 
 // Confirm each object is actually reachable over the public URL before any
 // content is repointed at it.
+async function headPublic(url) {
+  let lastError;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await fetch(url, {
+        method: "HEAD",
+        signal: AbortSignal.timeout(20_000),
+      });
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError;
+}
+
 const unreachable = [];
 for (const object of objects) {
-  const response = await fetch(publicUrl(object.name), { method: "HEAD" });
+  const response = await headPublic(publicUrl(object.name));
   const length = Number(response.headers.get("content-length"));
   if (!response.ok || length !== localSizes.get(object.name)) {
     unreachable.push(`${object.name}: http ${response.status}, length ${length}`);
@@ -225,18 +244,34 @@ function repointSql(from, to) {
   ].join("\n");
 }
 
+function wrappedSql(comment, statements) {
+  return [
+    comment,
+    "begin;",
+    "alter table site_content disable trigger user;",
+    "alter table portfolio_library disable trigger user;",
+    statements,
+    "alter table site_content enable trigger user;",
+    "alter table portfolio_library enable trigger user;",
+    "commit;",
+    "",
+  ].join("\n");
+}
+
 writeFileSync(
   join(backupDir, "r2-repoint.sql"),
-  `-- Repoint live content from Supabase Storage to R2.\nbegin;\n${urlMap
-    .map(({ from, to }) => repointSql(from, to))
-    .join("\n")}\ncommit;\n`,
+  wrappedSql(
+    "-- Repoint live content from Supabase Storage to R2. Revision rows are left unchanged.",
+    urlMap.map(({ from, to }) => repointSql(from, to)).join("\n"),
+  ),
 );
 
 writeFileSync(
   join(backupDir, "r2-rollback.sql"),
-  `-- Undo the repoint: send live content back to Supabase Storage.\nbegin;\n${urlMap
-    .map(({ from, to }) => repointSql(to, from))
-    .join("\n")}\ncommit;\n`,
+  wrappedSql(
+    "-- Undo the repoint: send live content back to the new Supabase Storage host.",
+    urlMap.map(({ from, to }) => repointSql(to, from)).join("\n"),
+  ),
 );
 
 console.log(
