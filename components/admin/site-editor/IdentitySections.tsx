@@ -246,12 +246,13 @@ export function HeroEditor({
         <p className="text-sm text-muted">
           It replaces the video on the site only after the upload finishes.
           Writing on this page still needs &ldquo;Save site content&rdquo;.
-          Use the original 1080p (or higher) file so it
-          stays sharp. Clips loop and can be up to one minute. On phones,
-          portrait clips lengthen the hero so the full frame stays visible.
-          On a wide screen they fill the viewport height. Landscape clips
-          always fill the viewport height. The picture is never stretched.
-          Without a video, the hero shows the plant wallpaper.
+          Use the original 1080p (or higher) file so it stays sharp. The
+          soundtrack is kept, and the hero plays it when someone presses play.
+          Clips play once and can be up to one minute. On phones, portrait clips
+          lengthen the hero so the full frame stays visible. On a wide screen
+          they fill the viewport height. Landscape clips always fill the
+          viewport height. The picture is never stretched. Without a video,
+          the hero shows the plant wallpaper.
         </p>
         <VideoSlotField
           slot="hero"

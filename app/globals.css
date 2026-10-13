@@ -157,17 +157,6 @@ body {
 
 
 /*
- * Keep looping videos on a GPU layer at device resolution. Parent transforms,
- * overflow:hidden, and border-radius otherwise rasterize them at 1× CSS pixels
- * on retina. The player also sizes the <video> at devicePixelRatio.
- */
-.autoplay-loop-clip {
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-}
-
-/*
  * Hero video band: only one sizer is visible. Exact ratio uses padding-top %
  * so a vertical clip lengthens the section instead of cover-cropping.
  * Both frames are 70% of that height. The clip stays full-bleed on the
@@ -226,34 +215,6 @@ body {
   max-width: 100%;
   object-fit: cover;
   object-position: center 22%;
-}
-
-.autoplay-loop-video {
-  object-position: center;
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-}
-
-/* Opacity only — transform is set in JS for Safari's video fit. */
-.autoplay-loop-video.is-handoff {
-  transition: opacity var(--loop-fade, 420ms) linear;
-}
-
-/* Decorative loop videos: never show native play chrome, even while buffering. */
-.autoplay-loop-video::-webkit-media-controls,
-.autoplay-loop-video::-webkit-media-controls-enclosure,
-.autoplay-loop-video::-webkit-media-controls-overlay-enclosure,
-.autoplay-loop-video::-webkit-media-controls-panel,
-.autoplay-loop-video::-webkit-media-controls-start-playback-button,
-.autoplay-loop-video::-webkit-media-controls-overlay-play-button {
-  display: none !important;
-  -webkit-appearance: none;
-  appearance: none;
-  opacity: 0 !important;
-  pointer-events: none !important;
-  width: 0 !important;
-  height: 0 !important;
 }
 
 .scroll-section-anchor,

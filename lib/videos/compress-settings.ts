@@ -21,10 +21,10 @@ export const COMPRESS_SETTINGS: Record<VideoUploadProfile, CompressSettings> = {
   hero: {
     maxShortEdge: 1080,
     crf: 23,
-    stripAudio: true,
+    stripAudio: false,
     maxDurationSec: 60,
     skipIfMp4UnderBytes: 8_000_000,
-    progressMessage: "Compressing background video (1080p, muted)…",
+    progressMessage: "Compressing background video (1080p, soundtrack kept)…",
     bitrate: 4_500_000,
     requireMp4: true,
   },
