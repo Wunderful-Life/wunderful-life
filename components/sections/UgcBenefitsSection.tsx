@@ -1,11 +1,12 @@
 "use client";
 
+import { useEffect, useId, useRef, useState } from "react";
 import { AdminEditButton } from "@/components/admin/AdminEditButton";
 import { SectionButterfly } from "@/components/ui/ButterflyFlight";
 import { DecorMotifs } from "@/components/ui/DecorMotifs";
 import { SectionReveal, StaggerChildren, StaggerItem } from "@/components/ui/motion";
 import { useSiteContent } from "@/components/admin/AdminViewProvider";
-import { statSource } from "@/lib/site/statSources";
+import { statSource, type StatSource } from "@/lib/site/statSources";
 
 /** Rotating tones for the circular stat cards, however many there are. */
 const STAT_TONES = ["light", "paper", "dark"] as const;
@@ -22,7 +23,7 @@ export function UgcBenefitsSection() {
     <section
       id="ugc"
       aria-labelledby="ugc-heading"
-      className="ugc-benefits-section scroll-section-anchor relative overflow-hidden px-4 py-10 sm:px-6 sm:py-16"
+      className="ugc-benefits-section scroll-section-anchor relative overflow-hidden px-4 pt-10 pb-16 sm:px-6 sm:pt-16 sm:pb-20"
     >
       <DecorMotifs preset="scatter" tone="paper" />
       <AdminEditButton section="ugc" label="Edit UGC" tone="light" />
@@ -57,19 +58,6 @@ export function UgcBenefitsSection() {
                     </p>
                   </div>
                   <p className="ugc-stat-label">{source?.label ?? stat.label}</p>
-                  {source && (
-                    <p className="mt-1 text-center text-[0.6rem] leading-snug text-paper/70 sm:text-[0.7rem]">
-                      Source:{" "}
-                      <a
-                        href={source.sourceUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="underline underline-offset-2 hover:text-paper"
-                      >
-                        {source.sourceName}
-                      </a>
-                    </p>
-                  )}
                 </article>
               </StaggerItem>
               );
@@ -117,6 +105,82 @@ export function UgcBenefitsSection() {
           </SectionReveal>
         </div>
       </div>
+
+      <UgcSourcesButton
+        sources={ugcBenefits.stats.flatMap((stat) => {
+          const source = statSource(stat.value);
+          return source ? [{ value: stat.value, source }] : [];
+        })}
+      />
     </section>
+  );
+}
+
+function UgcSourcesButton({
+  sources,
+}: {
+  sources: { value: string; source: StatSource }[];
+}) {
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  if (sources.length === 0) return null;
+
+  return (
+    <div ref={rootRef} className="absolute right-4 bottom-4 z-40 sm:right-6 sm:bottom-6">
+      {open && (
+        <div
+          id={panelId}
+          role="dialog"
+          aria-label="Sources"
+          className="absolute right-0 bottom-full mb-2 w-72 rounded-2xl border border-forest/15 bg-paper p-4 text-left text-ink shadow-xl"
+        >
+          <ul className="flex flex-col gap-3">
+            {sources.map(({ value, source }) => (
+              <li key={value}>
+                <a
+                  href={source.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-sm leading-snug underline decoration-forest/30 underline-offset-2 hover:text-forest"
+                >
+                  <span className="font-semibold">{value}</span>
+                  {" · "}
+                  {source.sourceName}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((current) => !current)}
+        className="inline-flex items-center rounded-full border border-paper/40 bg-forest-deep/70 px-3 py-1.5 font-label text-[11px] font-semibold tracking-[0.12em] text-paper uppercase shadow-sm backdrop-blur-md transition hover:bg-forest-deep"
+      >
+        Sources
+      </button>
+    </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAdminView } from "@/components/admin/AdminViewProvider";
 import { VideoThumbnail } from "@/components/ui/VideoThumbnail";
 import type { PortfolioVideo } from "@/lib/videos/types";
@@ -9,57 +9,11 @@ type DetailVideoPlayerProps = {
   video: PortfolioVideo;
 };
 
-type FrameSize = {
-  width: number;
-  height: number;
-};
-
-const DEFAULT_FRAME: FrameSize = { width: 9, height: 16 };
-
-function usableSize(width: number, height: number) {
-  return width >= 2 && height >= 2;
-}
-
 export function DetailVideoPlayer({ video }: DetailVideoPlayerProps) {
   const { viewMode } = useAdminView();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
   const [playbackError, setPlaybackError] = useState(false);
-  const [frame, setFrame] = useState<FrameSize>(DEFAULT_FRAME);
-
-  useEffect(() => {
-    let cancelled = false;
-    let bestRank = 0;
-    const apply = (width: number, height: number, rank: number) => {
-      if (cancelled || !usableSize(width, height) || rank < bestRank) return;
-      bestRank = rank;
-      setFrame((current) =>
-        current.width === width && current.height === height
-          ? current
-          : { width, height },
-      );
-    };
-
-    const poster = new Image();
-    if (video.thumbnailPath) {
-      poster.onload = () => apply(poster.naturalWidth, poster.naturalHeight, 1);
-      poster.src = video.thumbnailPath;
-    }
-
-    const probe = document.createElement("video");
-    probe.preload = "metadata";
-    probe.playsInline = true;
-    const onMeta = () => apply(probe.videoWidth, probe.videoHeight, 2);
-    probe.addEventListener("loadedmetadata", onMeta);
-    probe.src = video.videoPath;
-
-    return () => {
-      cancelled = true;
-      probe.removeEventListener("loadedmetadata", onMeta);
-      probe.removeAttribute("src");
-      probe.load();
-    };
-  }, [video.id, video.thumbnailPath, video.videoPath]);
 
   useEffect(() => {
     if (!playing) return;
@@ -74,20 +28,10 @@ export function DetailVideoPlayer({ video }: DetailVideoPlayerProps) {
     }
   }, [playing, video.videoPath]);
 
-  const shellStyle = {
-    "--detail-ar": String(frame.width / frame.height),
-  } as CSSProperties;
-  const frameStyle = {
-    paddingTop: `${(frame.height / frame.width) * 100}%`,
-  } as CSSProperties;
-
   return (
     <div className="flex w-full justify-center">
-      <div
-        className="detail-video-frame overflow-hidden rounded-[1.75rem] border-[3px] border-sage-deep bg-forest-deep shadow-[0_16px_36px_rgba(51,81,61,0.16)]"
-        style={shellStyle}
-      >
-        <div className="relative w-full" style={frameStyle}>
+      <div className="detail-video-frame overflow-hidden rounded-[1.75rem] border-[3.75px] border-sage-deep bg-forest-deep shadow-[0_16px_36px_rgba(51,81,61,0.16)]">
+        <div className="detail-video-ratio relative w-full">
         {playing && !playbackError ? (
           <video
             ref={videoRef}
@@ -96,15 +40,6 @@ export function DetailVideoPlayer({ video }: DetailVideoPlayerProps) {
             playsInline
             preload="metadata"
             className="absolute inset-0 h-full w-full bg-forest-deep object-cover"
-            onLoadedMetadata={(event) => {
-              const { videoWidth, videoHeight } = event.currentTarget;
-              if (!usableSize(videoWidth, videoHeight)) return;
-              setFrame((current) =>
-                current.width === videoWidth && current.height === videoHeight
-                  ? current
-                  : { width: videoWidth, height: videoHeight },
-              );
-            }}
             onError={() => {
               setPlaying(false);
               setPlaybackError(true);

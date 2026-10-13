@@ -736,9 +736,8 @@ body {
 }
 
 /*
- * Work detail player. Width follows the clip's own ratio, capped by viewport
- * height so a portrait video stays a rounded frame instead of a full-bleed
- * column. Desktop gets a slightly taller cap when the window has room.
+ * Work detail player. The portrait ratio is fixed so a loading still or
+ * clip cannot resize the frame. Width is capped by viewport height.
  * Height comes from padding-top on an inner box that fills this width.
  * Percentage padding uses the containing block, so it cannot sit on the
  * same element whose width is narrower than the column. Safari also drops
@@ -750,8 +749,11 @@ body {
   max-width: 100%;
 }
 
-/* Fill the ratio box. A contained still leaves a light strip when the
-   measured box is a few pixels taller than the picture. */
+.detail-video-ratio {
+  padding-top: calc(100% / var(--detail-ar));
+}
+
+/* Fill the fixed frame so a still cannot leave a strip while it loads. */
 .detail-video-frame img,
 .detail-video-frame video {
   object-fit: cover;
