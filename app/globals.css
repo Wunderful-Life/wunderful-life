@@ -724,8 +724,10 @@ body {
  * Work detail player. Width follows the clip's own ratio, capped by viewport
  * height so a portrait video stays a rounded frame instead of a full-bleed
  * column. Desktop gets a slightly taller cap when the window has room.
- * Height comes from padding-top on the element, not aspect-ratio — Safari
- * drops aspect-ratio on some layout boxes and crops the frame.
+ * Height comes from padding-top on an inner box that fills this width.
+ * Percentage padding uses the containing block, so it cannot sit on the
+ * same element whose width is narrower than the column. Safari also drops
+ * aspect-ratio on some layout boxes and crops the frame.
  */
 .detail-video-frame {
   --detail-ar: 0.5625;

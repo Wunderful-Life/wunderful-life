@@ -74,17 +74,20 @@ export function DetailVideoPlayer({ video }: DetailVideoPlayerProps) {
     }
   }, [playing, video.videoPath]);
 
+  const shellStyle = {
+    "--detail-ar": String(frame.width / frame.height),
+  } as CSSProperties;
   const frameStyle = {
     paddingTop: `${(frame.height / frame.width) * 100}%`,
-    "--detail-ar": String(frame.width / frame.height),
   } as CSSProperties;
 
   return (
     <div className="flex w-full justify-center">
-      <div
-        className="detail-video-frame relative overflow-hidden rounded-[1.75rem] bg-brown/10 shadow-[0_18px_44px_rgba(92,58,46,0.12)] ring-1 ring-white/80"
-        style={frameStyle}
-      >
+      <div className="detail-video-frame" style={shellStyle}>
+        <div
+          className="relative w-full overflow-hidden rounded-[1.75rem] bg-brown/10 shadow-[0_18px_44px_rgba(92,58,46,0.12)] ring-1 ring-white/80"
+          style={frameStyle}
+        >
         {playing && !playbackError ? (
           <video
             ref={videoRef}
@@ -153,6 +156,7 @@ export function DetailVideoPlayer({ video }: DetailVideoPlayerProps) {
             )}
           </button>
         )}
+        </div>
       </div>
     </div>
   );
