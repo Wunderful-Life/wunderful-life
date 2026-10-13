@@ -1,5 +1,6 @@
 "use client";
 
+import { normalizeHref } from "@/lib/site/normalize";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { AdminEditButton } from "@/components/admin/AdminEditButton";
@@ -113,7 +114,7 @@ export function ClosingCtaSection() {
             }`}
           >
             <motion.a
-              href={social.email}
+              href={normalizeHref(social.email)}
               whileHover={{ scale: 1.03, y: -2 }}
               whileTap={{ scale: 0.98 }}
               className="inline-flex items-center justify-center rounded-full bg-forest px-8 py-3.5 font-label text-sm font-semibold tracking-[0.03em] text-paper underline underline-offset-4 shadow-lg transition hover:bg-forest-deep sm:text-base"
@@ -122,7 +123,7 @@ export function ClosingCtaSection() {
             </motion.a>
 
             <motion.a
-              href={social.instagram}
+              href={normalizeHref(social.instagram)}
               aria-label="Open Instagram"
               whileHover={{ scale: 1.06, y: -2 }}
               whileTap={{ scale: 0.96 }}

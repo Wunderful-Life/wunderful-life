@@ -1,5 +1,6 @@
 "use client";
 
+import { isSampleTestimonial } from "@/lib/site/normalize";
 import { AdminEditButton } from "@/components/admin/AdminEditButton";
 import { SectionButterfly } from "@/components/ui/ButterflyFlight";
 import { SectionReveal, StaggerChildren, StaggerItem } from "@/components/ui/motion";
@@ -47,7 +48,14 @@ export function TestimonialsSection() {
         </SectionReveal>
 
         <StaggerChildren className="testimonial-cloud-drift mx-auto mt-10 max-w-6xl">
-          {site.testimonials.items.slice(0, MAX_TESTIMONIALS).map((testimonial, index) => (
+          {site.testimonials.items
+            .filter(
+              (item) =>
+                item.quote.trim() &&
+                (process.env.NODE_ENV === "development" || !isSampleTestimonial(item)),
+            )
+            .slice(0, MAX_TESTIMONIALS)
+            .map((testimonial, index) => (
             <StaggerItem
               key={testimonial.id}
               className="testimonial-cloud-row"

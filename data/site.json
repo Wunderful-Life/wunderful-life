@@ -4,7 +4,11 @@
     "videoPath": "https://ltrldffckmplvmyonhwc.supabase.co/storage/v1/object/public/site-media/hero/e7b836fc-d5c1-4091-8e4d-87f04000a51d.mp4",
     "titleLine": "Emily",
     "titleAccent": "Wunder",
-    "services": ["UGC", "Social Media", "Marketing"]
+    "services": [
+      "UGC",
+      "Social Media",
+      "Marketing"
+    ]
   },
   "name": "Emily",
   "work": {
@@ -75,7 +79,6 @@
     "items": [
       {
         "id": "brand-1",
-        "url": "www.fryingpan.com",
         "name": "Nike",
         "logoPath": "https://ltrldffckmplvmyonhwc.supabase.co/storage/v1/object/public/site-media/brand-logos/e0964ecc-9f21-45f4-ac21-b80c89d15e85.png"
       },
@@ -83,14 +86,6 @@
         "id": "brand-2",
         "name": "District Tattoo",
         "logoPath": "https://ltrldffckmplvmyonhwc.supabase.co/storage/v1/object/public/site-media/brand-logos/d709e0d6-1777-43c6-93d4-a1baabe37642.jpg"
-      },
-      {
-        "id": "brand-3",
-        "name": "Brand 3"
-      },
-      {
-        "id": "brand-4",
-        "name": "Brand 4"
       }
     ],
     "heading": "Brands I've worked with",
@@ -98,7 +93,7 @@
   },
   "social": {
     "email": "mailto:wunderful.life.777@gmail.com",
-    "instagram": "#https://www.instagram.com/wunderfull.life777/"
+    "instagram": "https://www.instagram.com/wunderfull.life777/"
   },
   "tagline": "Content that is relatable, informative, and fun! ",
   "fullName": "Emily Wunder",
@@ -289,32 +284,7 @@
     "benefitsHeading": "Content that feels like a recommendation."
   },
   "testimonials": {
-    "items": [
-      {
-        "id": "warm-natural",
-        "name": "Sample Brand Partner",
-        "role": "Lifestyle campaign",
-        "quote": "Emily brought such a warm, natural presence to the content. The video felt polished without losing that real-life charm."
-      },
-      {
-        "id": "easy-collaboration",
-        "name": "Example Client",
-        "role": "Wellness launch",
-        "quote": "The creative direction was thoughtful, on-brand, and easy to use across our social channels."
-      },
-      {
-        "id": "easy-to-book",
-        "name": "Sample Studio Lead",
-        "role": "Product story",
-        "quote": "Booking Emily was simple, and the turnaround gave us more than we needed for the launch week."
-      },
-      {
-        "id": "audience-fit",
-        "name": "Example Shop Owner",
-        "role": "Seasonal collection",
-        "quote": "Her delivery felt like a friend sharing a find, which is exactly the tone we wanted for this line."
-      }
-    ],
+    "items": [],
     "eyebrow": "Social Proof",
     "heading": "Testimonials ",
     "visible": true
