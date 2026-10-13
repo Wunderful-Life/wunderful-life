@@ -2,10 +2,15 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { AnimatedButton } from "@/components/ui/AnimatedButton";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 import { SectionLink } from "@/components/ui/SectionLink";
 import { useSiteContent } from "@/components/admin/AdminViewProvider";
 import type { HeroLink } from "@/lib/site/types";
+
+function isContactLink(link: HeroLink) {
+  return link.href.replace(/\/$/, "").endsWith("#contact");
+}
 
 export function SiteNav() {
   const site = useSiteContent();
@@ -78,17 +83,23 @@ export function SiteNav() {
         </SectionLink>
 
         <nav className="ml-auto hidden shrink-0 items-center gap-4 md:flex lg:gap-6">
-          {site.heroLinks.map((link) => (
-            <SectionLink
-              key={link.href}
-              href={link.href}
-              className={`whitespace-nowrap text-sm font-medium transition-colors hover:text-forest ${
-                isActive(link) ? "text-forest" : "text-ink/85"
-              }`}
-            >
-              {link.label}
-            </SectionLink>
-          ))}
+          {site.heroLinks.map((link) =>
+            isContactLink(link) ? (
+              <AnimatedButton key={link.href} href={link.href} variant="nav">
+                {link.label}
+              </AnimatedButton>
+            ) : (
+              <SectionLink
+                key={link.href}
+                href={link.href}
+                className={`whitespace-nowrap text-sm font-medium transition-colors hover:text-forest ${
+                  isActive(link) ? "text-forest" : "text-ink/85"
+                }`}
+              >
+                {link.label}
+              </SectionLink>
+            ),
+          )}
         </nav>
 
         <button
@@ -109,16 +120,28 @@ export function SiteNav() {
         className="border-t border-white/30 bg-paper/80 md:hidden"
       >
         <div className="flex flex-col gap-1 px-4 py-3 sm:px-6">
-          {site.heroLinks.map((link) => (
-            <SectionLink
-              key={link.href}
-              href={link.href}
-              onClick={() => setMenuOpen(false)}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-ink hover:bg-white/20 hover:text-forest"
-            >
-              {link.label}
-            </SectionLink>
-          ))}
+          {site.heroLinks.map((link) =>
+            isContactLink(link) ? (
+              <AnimatedButton
+                key={link.href}
+                href={link.href}
+                variant="nav"
+                className="mt-1"
+                onClick={() => setMenuOpen(false)}
+              >
+                {link.label}
+              </AnimatedButton>
+            ) : (
+              <SectionLink
+                key={link.href}
+                href={link.href}
+                onClick={() => setMenuOpen(false)}
+                className="rounded-lg px-3 py-2 text-sm font-medium text-ink hover:bg-white/20 hover:text-forest"
+              >
+                {link.label}
+              </SectionLink>
+            ),
+          )}
         </div>
       </nav>
     </header>
