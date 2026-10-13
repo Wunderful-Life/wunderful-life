@@ -492,6 +492,21 @@ body {
   }
 }
 
+/* One quote belongs under the heading, not parked on the left bank. */
+@media (min-width: 768px) {
+  .testimonial-cloud-drift-solo .testimonial-cloud-row {
+    justify-content: center;
+  }
+
+  .testimonial-cloud-drift-solo .testimonial-cloud-slot {
+    margin-top: 0;
+    margin-right: 0;
+    margin-left: 0;
+    width: min(100%, 38rem);
+    transform: none;
+  }
+}
+
 .service-glass-card {
   box-shadow: 0 10px 36px rgb(61 55 46 / 0.07);
 }

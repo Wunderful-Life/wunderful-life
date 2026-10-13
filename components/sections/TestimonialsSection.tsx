@@ -21,6 +21,14 @@ export function TestimonialsSection() {
   const text = sectionText.contact;
   const hiddenFromVisitors = !site.testimonials.visible;
 
+  const quotes = site.testimonials.items
+    .filter(
+      (item) =>
+        item.quote.trim() &&
+        (process.env.NODE_ENV === "development" || !isSampleTestimonial(item)),
+    )
+    .slice(0, MAX_TESTIMONIALS);
+
   if (hiddenFromVisitors && viewMode !== "admin") {
     return null;
   }
@@ -47,15 +55,10 @@ export function TestimonialsSection() {
           </h2>
         </SectionReveal>
 
-        <StaggerChildren className="testimonial-cloud-drift mx-auto mt-10 max-w-6xl">
-          {site.testimonials.items
-            .filter(
-              (item) =>
-                item.quote.trim() &&
-                (process.env.NODE_ENV === "development" || !isSampleTestimonial(item)),
-            )
-            .slice(0, MAX_TESTIMONIALS)
-            .map((testimonial, index) => (
+        <StaggerChildren
+          className={`testimonial-cloud-drift mx-auto mt-10 max-w-6xl${quotes.length === 1 ? " testimonial-cloud-drift-solo" : ""}`}
+        >
+          {quotes.map((testimonial, index) => (
             <StaggerItem
               key={testimonial.id}
               className="testimonial-cloud-row"
