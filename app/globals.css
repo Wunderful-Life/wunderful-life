@@ -210,6 +210,21 @@ body {
   }
 }
 
+/* Padding-top sets the frame height. Clip the fill image so it cannot cover the page. */
+.emily-photo-window {
+  contain: paint;
+}
+
+.emily-photo-window img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  object-fit: cover;
+  object-position: center 22%;
+}
+
 .autoplay-loop-video {
   object-position: center;
   transform: translateZ(0);

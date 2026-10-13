@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Image from "next/image";
 import { shouldBypassImageOptimizer } from "@/lib/media/urls";
 import {
@@ -51,12 +52,21 @@ const imageSizes: Record<EmilyPhotoSize, string> = {
 
 type ShapedFrame = Exclude<AboutPhotoFrame, "polaroid">;
 
+/** Height as a percentage of width. Padding, not aspect-ratio: Safari drops aspect-ratio and a fill image then covers the page. */
+const shapedFramePadding: Record<ShapedFrame, string> = {
+  arch: "133.333%",
+  oval: "125%",
+  circle: "100%",
+  rounded: "125%",
+  square: "100%",
+};
+
 const shapedWindowClasses: Record<ShapedFrame, string> = {
-  arch: "aspect-[3/4] rounded-t-full",
-  oval: "aspect-[4/5] rounded-full",
-  circle: "aspect-square rounded-full",
-  rounded: "aspect-[4/5] rounded-3xl",
-  square: "aspect-square rounded-2xl",
+  arch: "rounded-t-full",
+  oval: "rounded-full",
+  circle: "rounded-full",
+  rounded: "rounded-3xl",
+  square: "rounded-2xl",
 };
 
 const POLAROID_SHADOW =
@@ -102,7 +112,7 @@ function PhotoMedia({
         sizes={imageSizes[size]}
         decoding="async"
         unoptimized={shouldBypassImageOptimizer(photo.imagePath)}
-        className="object-cover object-center"
+        className="object-cover object-[center_22%]"
       />
     );
   }
@@ -113,6 +123,23 @@ function PhotoMedia({
       <p className="text-[10px] leading-snug text-brown/50 sm:text-xs">
         Photo placeholder
       </p>
+    </div>
+  );
+}
+
+function PhotoWindow({
+  paddingTop,
+  className,
+  children,
+}: {
+  paddingTop: string;
+  className: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className={`emily-photo-window relative w-full overflow-hidden ${className}`}>
+      <div className="w-full" style={{ paddingTop }} />
+      <div className="absolute inset-0">{children}</div>
     </div>
   );
 }
@@ -135,11 +162,12 @@ function PolaroidPhoto({
       className={`max-w-full ${sizeClasses[size]} ${polaroidPadClasses[size]} rotate-[var(--photo-rotate)] rounded-sm border border-white/90 bg-paper ${showShadow ? POLAROID_SHADOW : ""} ring-1 ring-lavender/20 ${className}`}
       style={{ ["--photo-rotate" as string]: `${photo.rotate}deg` }}
     >
-      <div
-        className={`relative aspect-[4/5] overflow-hidden rounded-sm bg-gradient-to-br ${PHOTO_FRAME_GRADIENT}`}
+      <PhotoWindow
+        paddingTop="125%"
+        className={`rounded-sm bg-gradient-to-br ${PHOTO_FRAME_GRADIENT}`}
       >
         <PhotoMedia photo={photo} size={size} />
-      </div>
+      </PhotoWindow>
       {photo.showCaption !== false ? (
         <PhotoCaption caption={photo.caption} className={captionClassName} />
       ) : null}
@@ -164,13 +192,14 @@ function ShapedPhoto({
 
   return (
     <figure className={`max-w-full ${sizeClasses[size]} ${className}`}>
-      <div
-        className={`relative overflow-hidden bg-gradient-to-br ${PHOTO_FRAME_GRADIENT} ${shapedWindowClasses[frame]} ${
+      <PhotoWindow
+        paddingTop={shapedFramePadding[frame]}
+        className={`bg-gradient-to-br ${PHOTO_FRAME_GRADIENT} ${shapedWindowClasses[frame]} ${
           showShadow ? SHAPED_FRAME_SHADOW[frame] : ""
         }`}
       >
         <PhotoMedia photo={photo} size={size} />
-      </div>
+      </PhotoWindow>
       {photo.showCaption !== false ? (
         <PhotoCaption caption={photo.caption} className={captionClassName} />
       ) : null}
