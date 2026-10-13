@@ -1,3 +1,4 @@
+import { containerHasAudio } from "@/lib/videos/container-audio";
 import { toErrorMessage } from "@/lib/errors";
 import { extensionFromFilename } from "@/lib/files";
 import {
@@ -200,6 +201,8 @@ type CanvasCaptureTrack = MediaStreamTrack & {
   requestFrame?: () => void;
 };
 
+const AUDIO_LOST_MESSAGE = "Could not keep this clip's sound while compressing.";
+
 async function tryPlayMuted(video: HTMLVideoElement): Promise<boolean> {
   video.muted = true;
   video.defaultMuted = true;
@@ -212,17 +215,169 @@ async function tryPlayMuted(video: HTMLVideoElement): Promise<boolean> {
   }
 }
 
-function captureAudioTracks(video: CapturableVideo): MediaStreamTrack[] {
-  // A muted element still exposes its audio through captureStream, which is how
-  // sound survives compression without triggering the autoplay policy.
+function playAudible(video: HTMLVideoElement): Promise<boolean> {
+  video.muted = false;
+  video.defaultMuted = false;
+  video.volume = 1;
+  video.removeAttribute("muted");
+  try {
+    return video.play().then(
+      () => !video.paused && !video.muted && video.volume > 0,
+      () => false,
+    );
+  } catch {
+    return Promise.resolve(false);
+  }
+}
+
+type SpeakerTap = {
+  tracks: MediaStreamTrack[];
+  context: AudioContext;
+  release: () => void;
+};
+
+function audioContextConstructor(): typeof AudioContext | null {
+  if (typeof window === "undefined") return null;
+  const scope = window as Window & { webkitAudioContext?: typeof AudioContext };
+  return window.AudioContext ?? scope.webkitAudioContext ?? null;
+}
+
+/**
+ * Route the element into a recorder stream and silence the speakers.
+ * The element itself must stay unmuted — a muted video captures silence.
+ */
+function tapSilentSpeakers(video: HTMLVideoElement): SpeakerTap | null {
+  const AudioContextCtor = audioContextConstructor();
+  if (!AudioContextCtor) return null;
+
+  const context = new AudioContextCtor();
+  void context.resume().catch(() => undefined);
+  video.muted = false;
+  video.defaultMuted = false;
+  video.volume = 1;
+  video.removeAttribute("muted");
+
+  try {
+    const source = context.createMediaElementSource(video);
+    const destination = context.createMediaStreamDestination();
+    const silence = context.createGain();
+    silence.gain.value = 0;
+    source.connect(destination);
+    source.connect(silence);
+    silence.connect(context.destination);
+    return {
+      tracks: destination.stream.getAudioTracks(),
+      context,
+      release: () => {
+        try {
+          source.disconnect();
+          silence.disconnect();
+        } catch {
+          // The graph is already torn down.
+        }
+        void context.close();
+      },
+    };
+  } catch (error) {
+    console.warn(AUDIO_LOST_MESSAGE, error);
+    void context.close();
+    return null;
+  }
+}
+
+type PrimedPlayback = {
+  file: File;
+  video: CapturableVideo;
+  objectUrl: string;
+  audio: SpeakerTap;
+  playPromise: Promise<boolean>;
+};
+
+let primedPlayback: PrimedPlayback | null = null;
+
+function discardPrimedPlayback(primed: PrimedPlayback) {
+  primed.video.pause();
+  primed.audio.release();
+  detachHiddenVideo(primed.video);
+  URL.revokeObjectURL(primed.objectUrl);
+}
+
+/** Stop a file-picker playback that compression never took over. */
+export function releasePortfolioAudio(file?: File): void {
+  if (!primedPlayback) return;
+  if (file && primedPlayback.file !== file) return;
+  const primed = primedPlayback;
+  primedPlayback = null;
+  discardPrimedPlayback(primed);
+}
+
+function takePrimedPlayback(file: File): PrimedPlayback | null {
+  if (!primedPlayback || primedPlayback.file !== file) return null;
+  const primed = primedPlayback;
+  primedPlayback = null;
+  return primed;
+}
+
+/**
+ * Call this synchronously from the file input's change event, before any
+ * await. iPhone uploads are compressed by playing the clip, and audible
+ * play() is only allowed in that gesture. Desktop files that fit in
+ * ffmpeg.wasm do not need it — that path muxes the soundtrack directly.
+ */
+export function primePortfolioAudio(file: File): void {
+  releasePortfolioAudio();
+  if (typeof document === "undefined") return;
+  if (!needsWebTranscode(file, "portfolio")) return;
+  if (!prefersBrowserRecorder() && file.size <= FFMPEG_SAFE_SOURCE_BYTES) return;
+
+  const video = document.createElement("video") as CapturableVideo;
+  attachHiddenVideo(video, { muted: false });
+  const objectUrl = URL.createObjectURL(file);
+  video.preload = "auto";
+  video.src = objectUrl;
+  const audio = tapSilentSpeakers(video);
+  if (!audio || audio.tracks.length === 0) {
+    detachHiddenVideo(video);
+    URL.revokeObjectURL(objectUrl);
+    return;
+  }
+
+  primedPlayback = {
+    file,
+    video,
+    objectUrl,
+    audio,
+    playPromise: playAudible(video),
+  };
+}
+
+function recordingAudioTracks(
+  video: CapturableVideo,
+  tap: SpeakerTap | null,
+): MediaStreamTrack[] {
+  if (tap && tap.tracks.length > 0) return tap.tracks;
+  if (video.muted || video.volume === 0) return [];
   try {
     const captured =
       video.captureStream?.(30) ?? video.mozCaptureStream?.(30) ?? null;
     return captured?.getAudioTracks() ?? [];
   } catch (error) {
-    console.warn("Could not capture audio while compressing:", error);
+    console.warn(AUDIO_LOST_MESSAGE, error);
     return [];
   }
+}
+
+async function outputDroppedAudio(
+  source: File,
+  output: File,
+  keepAudio: boolean,
+): Promise<boolean> {
+  if (!keepAudio) return false;
+  const outputAudio = await containerHasAudio(output);
+  if (outputAudio === true) return false;
+  const sourceAudio = await containerHasAudio(source);
+  if (outputAudio === false) return sourceAudio !== false;
+  return sourceAudio === true;
 }
 
 function extensionForRecorderMime(mimeType: string): { ext: string; type: string } {
@@ -328,13 +483,18 @@ async function recordByPlayback(
   file: File,
   settings: CompressSettings,
   mimeType: string,
+  audioTracks: MediaStreamTrack[],
 ): Promise<File> {
-  const canvasStream = captureCanvasStream(canvas, 30);
-  const mixedStream = new MediaStream(canvasStream.getVideoTracks());
-  const audioTracks = settings.stripAudio ? [] : captureAudioTracks(video);
-  for (const track of audioTracks) {
-    mixedStream.addTrack(track);
+  const keepAudio = !settings.stripAudio;
+  if (keepAudio && audioTracks.length === 0) {
+    throw new Error(AUDIO_LOST_MESSAGE);
   }
+
+  const canvasStream = captureCanvasStream(canvas, 30);
+  const mixedStream = new MediaStream([
+    ...canvasStream.getVideoTracks(),
+    ...audioTracks,
+  ]);
 
   const { recorder, chunks, stopped } = startRecorder(
     mixedStream,
@@ -350,8 +510,9 @@ async function recordByPlayback(
 
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     recorder.start(250);
-    if (!(await tryPlayMuted(video))) {
-      throw new Error("Playback was blocked.");
+    const playing = keepAudio ? await playAudible(video) : await tryPlayMuted(video);
+    if (!playing) {
+      throw new Error(keepAudio ? AUDIO_LOST_MESSAGE : "Playback was blocked.");
     }
 
     const draw = () => {
@@ -486,14 +647,20 @@ async function transcodeWithMediaRecorder(
   }
 
   const settings = settingsForProfile(profile);
-  const mimeType = pickRecorderMimeType(!settings.stripAudio);
+  const keepAudio = !settings.stripAudio;
+  const mimeType = pickRecorderMimeType(keepAudio);
+  const primed = keepAudio ? takePrimedPlayback(file) : null;
 
   onProgress?.("Compressing video in this browser…");
 
-  const objectUrl = URL.createObjectURL(file);
-  const video = document.createElement("video") as CapturableVideo;
+  const objectUrl = primed?.objectUrl ?? URL.createObjectURL(file);
+  const video = primed?.video ?? (document.createElement("video") as CapturableVideo);
+  const audio = primed?.audio ?? null;
   const canvas = document.createElement("canvas");
-  attachHiddenVideo(video);
+  if (!primed) {
+    attachHiddenVideo(video, { muted: !keepAudio });
+    video.src = objectUrl;
+  }
   canvas.style.position = "fixed";
   canvas.style.top = "0";
   canvas.style.left = "0";
@@ -502,8 +669,11 @@ async function transcodeWithMediaRecorder(
   canvas.style.opacity = "0.01";
   canvas.style.pointerEvents = "none";
   document.body.appendChild(canvas);
-  video.src = objectUrl;
-  const playPromise = tryPlayMuted(video);
+  const playPromise = primed
+    ? primed.playPromise
+    : keepAudio
+      ? playAudible(video)
+      : tryPlayMuted(video);
 
   try {
     return await withTimeout(
@@ -520,7 +690,27 @@ async function transcodeWithMediaRecorder(
 
         let playing = await playPromise;
         if (video.paused) {
-          playing = await tryPlayMuted(video);
+          playing = keepAudio ? await playAudible(video) : await tryPlayMuted(video);
+        }
+
+        if (keepAudio && audio && audio.context.state !== "running") {
+          try {
+            await audio.context.resume();
+          } catch {
+            // Resume outside the file-picker gesture often stays suspended.
+          }
+        }
+
+        const audioTracks = keepAudio ? recordingAudioTracks(video, audio) : [];
+        if (
+          keepAudio &&
+          (video.muted ||
+            video.volume === 0 ||
+            !playing ||
+            audioTracks.length === 0 ||
+            (audio !== null && audio.context.state !== "running"))
+        ) {
+          throw new Error(AUDIO_LOST_MESSAGE);
         }
 
         if (!video.videoWidth || !video.videoHeight) {
@@ -549,21 +739,31 @@ async function transcodeWithMediaRecorder(
 
         if (playing && !video.paused) {
           try {
-            return await recordByPlayback(
+            const recorded = await recordByPlayback(
               video,
               canvas,
               context,
               file,
               settings,
               mimeType,
+              audioTracks,
             );
+            if (await outputDroppedAudio(file, recorded, keepAudio)) {
+              throw new Error(AUDIO_LOST_MESSAGE);
+            }
+            return recorded;
           } catch (error) {
+            if (keepAudio) throw error;
             console.warn(
               "Realtime compression failed, drawing frames instead:",
               error,
             );
             video.pause();
           }
+        }
+
+        if (keepAudio) {
+          throw new Error(AUDIO_LOST_MESSAGE);
         }
 
         return recordBySeeking(
@@ -581,6 +781,7 @@ async function transcodeWithMediaRecorder(
     );
   } finally {
     video.pause();
+    audio?.release();
     detachHiddenVideo(video);
     canvas.remove();
     URL.revokeObjectURL(objectUrl);
@@ -626,7 +827,17 @@ async function transcodeToMp4(
   }
 
   const baseName = file.name.replace(/\.[^.]+$/i, "") || "video";
-  return fileFromBytes(bytes, `${baseName}.mp4`, "video/mp4");
+  const output = fileFromBytes(bytes, `${baseName}.mp4`, "video/mp4");
+  if (
+    await outputDroppedAudio(
+      file,
+      output,
+      !settingsForProfile(profile).stripAudio,
+    )
+  ) {
+    throw new Error(AUDIO_LOST_MESSAGE);
+  }
+  return output;
 }
 
 async function remuxToMp4(
@@ -832,5 +1043,7 @@ export async function prepareVideoForWebUpload(
       "Couldn't compress this clip in the browser, so the original was uploaded. It will play fine but may load more slowly.",
     );
     return assertProfileOutput(file, profile);
+  } finally {
+    releasePortfolioAudio(file);
   }
 }

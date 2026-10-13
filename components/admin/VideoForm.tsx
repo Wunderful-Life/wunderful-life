@@ -25,6 +25,8 @@ import {
   isUploadAborted,
   prepareAndUploadImage,
   prepareAndUploadVideo,
+  primePortfolioAudio,
+  releasePortfolioAudio,
   useMediaPreview,
   type MediaUploadState,
   type PreparedUpload,
@@ -141,6 +143,7 @@ export function VideoForm({
     return () => {
       videoUploadGenRef.current += 1;
       thumbnailUploadGenRef.current += 1;
+      releasePortfolioAudio();
       onUploadBusyChange?.(false);
     };
   }, [onUploadBusyChange]);
@@ -515,6 +518,7 @@ export function VideoForm({
           disabled={isMediaUploadBusy(videoUpload)}
           onChange={(file) => {
             if (file && !isAcceptedVideoFile(file)) {
+              releasePortfolioAudio();
               setVideoFile(null);
               setVideoPrepared(null);
               setVideoUpload(idleMediaUpload());
@@ -524,6 +528,12 @@ export function VideoForm({
             }
             setError(null);
             setThumbnailHint(null);
+            if (file) {
+              // Must run in this change event, before the upload awaits.
+              primePortfolioAudio(file);
+            } else {
+              releasePortfolioAudio();
+            }
             setVideoFile(file);
             if (file) {
               void startVideoUpload(file);
@@ -538,6 +548,7 @@ export function VideoForm({
               ? () => {
                   videoUploadGenRef.current += 1;
                   thumbnailUploadGenRef.current += 1;
+                  releasePortfolioAudio();
                   resetMedia();
                   setError(null);
                 }

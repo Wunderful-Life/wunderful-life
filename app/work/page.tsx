@@ -25,7 +25,7 @@ export default async function WorkPage() {
         </h1>
         <p className={`mt-4 max-w-2xl ${text.body}`}>
           A curated library of Emily&apos;s UGC videos, laid out for easy browsing.
-          Tap a thumbnail to watch or open the details for more context.
+          Press play to watch a clip here, or open a card for the full details.
         </p>
         <WorkPageClient initialVideos={videos} />
       </div>

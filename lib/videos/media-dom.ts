@@ -27,16 +27,26 @@ export function sleep(ms: number): Promise<void> {
 /**
  * Keep the element in the viewport. iOS Safari treats off-screen videos
  * (`left: -9999px`) as not visible and refuses `play()`, even when muted.
+ * Portfolio compression passes `muted: false` so the soundtrack can be
+ * recorded; callers that only need a frame should leave the default.
  */
-export function attachHiddenVideo(video: HTMLVideoElement): void {
+export function attachHiddenVideo(
+  video: HTMLVideoElement,
+  options?: { muted?: boolean },
+): void {
   if (typeof document === "undefined") return;
-  video.muted = true;
-  video.defaultMuted = true;
-  video.volume = 0;
+  const muted = options?.muted ?? true;
+  video.muted = muted;
+  video.defaultMuted = muted;
+  video.volume = muted ? 0 : 1;
   video.playsInline = true;
   video.setAttribute("playsinline", "true");
   video.setAttribute("webkit-playsinline", "true");
-  video.setAttribute("muted", "");
+  if (muted) {
+    video.setAttribute("muted", "");
+  } else {
+    video.removeAttribute("muted");
+  }
   video.preload = "auto";
   video.controls = false;
   video.disablePictureInPicture = true;

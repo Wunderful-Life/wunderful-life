@@ -14,6 +14,8 @@ import {
   needsWebTranscode,
   prepareVideoForWebUpload,
 } from "@/lib/videos/transcode";
+
+export { primePortfolioAudio, releasePortfolioAudio } from "@/lib/videos/transcode";
 import type { VideoUploadProfile } from "@/lib/videos/profile";
 
 export type MediaUploadStatus =
