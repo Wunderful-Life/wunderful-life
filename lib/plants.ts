@@ -60,11 +60,9 @@ export const plantWallpapers = {
   },
   "about-sky": {
     src: "/plants/wallpaper-about-sky.jpg",
-    alt: "Soft pastel sunset sky",
-    credit: "Emily Wunder",
+    alt: "Flower meadow under a sunset sky",
+    credit: "Dreamstime",
     position: "center center",
-    saturation: 1.5,
-    contrast: 1.12,
   },
   "jungle-leaves": {
     src: "/plants/wallpaper-jungle-leaves.jpg",

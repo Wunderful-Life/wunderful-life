@@ -11,6 +11,22 @@ import { EmilyPhoto } from "@/components/ui/EmilyPhoto";
 import { SectionSurface } from "@/components/ui/SectionSurface";
 import { SectionReveal } from "@/components/ui/motion";
 
+/**
+ * "Let's work together" in Bodoni Moda 14pt Black with tracking-tight.
+ * Other headlines use a wider per-letter estimate so a longer line still fits.
+ */
+const DEFAULT_HEADLINE_EM = 9.479;
+
+function closingHeadlineFontSize(headline: string): string {
+  const normalized = headline.trim().replace(/\u2019/g, "'");
+  const em =
+    normalized === "Let's work together"
+      ? DEFAULT_HEADLINE_EM
+      : Math.max(normalized.length, 1) * 0.64;
+  const preferred = (92 / em).toFixed(3);
+  return `clamp(1.6rem, ${preferred}cqi, 6rem)`;
+}
+
 function splitClosingBody(body: string): { lead: string; closer: string } | null {
   const mark = body.lastIndexOf("?");
   if (mark < 0) return null;
@@ -63,43 +79,38 @@ export function ClosingCtaSection() {
       <SectionReveal
         variant="slideFromLeft"
         duration={0.9}
-        className={`relative z-10 mx-auto grid max-w-5xl items-center gap-10 sm:gap-14 ${
+        className={`relative z-10 mx-auto grid w-full min-w-0 max-w-5xl items-center gap-10 sm:gap-14 ${
           showPhoto
-            ? "lg:grid-cols-[0.85fr_1.15fr]"
+            ? "lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]"
             : "justify-items-center"
         }`}
       >
         {showPhoto ? (
-          <div className="mx-auto w-full max-w-xs lg:max-w-none">
+          <div className="mx-auto w-full min-w-0 max-w-xs lg:max-w-none">
             <EmilyPhoto photo={closingCta.photo} size="lg" />
           </div>
         ) : null}
 
         <div
-          className={
-            showPhoto ? "text-center lg:text-left" : "w-full text-center"
-          }
+          className={`w-full min-w-0 max-w-full [container-type:inline-size] ${
+            showPhoto ? "text-center lg:text-left" : "text-center"
+          }`}
         >
           <h2
             id="closing-cta-heading"
-            className={`font-didone whitespace-nowrap pb-1 font-black tracking-tight text-forest ${
-              showPhoto
-                ? "text-[clamp(1.85rem,10vw,3rem)] lg:text-6xl xl:text-7xl"
-                : "text-[clamp(1.85rem,11vw,3rem)] sm:text-7xl md:text-8xl"
-            }`}
+            style={{ fontSize: closingHeadlineFontSize(closingCta.headline) }}
+            className="mx-auto max-w-full pb-1 font-didone font-black tracking-tight whitespace-nowrap text-forest"
           >
             {closingCta.headline}
           </h2>
           <p
-            className={`mx-auto mt-5 max-w-md text-sm leading-relaxed text-ink/80 sm:text-base${
+            className={`mx-auto mt-5 max-w-md text-sm leading-relaxed text-balance text-ink/80 sm:text-base${
               showPhoto ? " lg:mx-0" : " md:max-w-none"
             }`}
           >
             {bodyLines ? (
               <>
-                <span className={showPhoto ? undefined : "md:whitespace-nowrap"}>
-                  {bodyLines.lead}
-                </span>
+                <span>{bodyLines.lead}</span>
                 <span className="md:hidden"> </span>
                 <span className="md:block">{bodyLines.closer}</span>
               </>
@@ -109,7 +120,7 @@ export function ClosingCtaSection() {
           </p>
 
           <div
-            className={`mt-8 flex flex-row items-center justify-center gap-4${
+            className={`mt-8 flex max-w-full flex-wrap items-center justify-center gap-3 sm:gap-4${
               showPhoto ? " lg:justify-start" : ""
             }`}
           >
@@ -117,7 +128,7 @@ export function ClosingCtaSection() {
               href={normalizeHref(social.email)}
               whileHover={{ scale: 1.03, y: -2 }}
               whileTap={{ scale: 0.98 }}
-              className="inline-flex items-center justify-center rounded-full bg-forest px-8 py-3.5 font-label text-sm font-semibold tracking-[0.03em] text-paper underline underline-offset-4 shadow-lg transition hover:bg-forest-deep sm:text-base"
+              className="inline-flex max-w-full items-center justify-center rounded-full bg-forest px-5 py-3.5 text-center font-label text-sm font-semibold tracking-[0.03em] text-paper underline underline-offset-4 shadow-lg transition hover:bg-forest-deep sm:px-8 sm:text-base"
             >
               {closingCta.emailLabel}
             </motion.a>
@@ -134,7 +145,7 @@ export function ClosingCtaSection() {
           </div>
 
           <div
-            className={`mx-auto mt-9 w-[min(100%,16.5rem)] sm:mt-10 sm:w-[20rem] lg:mt-12 lg:w-[22.5rem]${
+            className={`mx-auto mt-9 w-[min(100%,16.5rem)] sm:mt-10 sm:w-[min(100%,20rem)] lg:mt-12 lg:w-[min(100%,22.5rem)]${
               showPhoto ? " lg:mx-0 lg:ml-1" : ""
             }`}
           >

@@ -31,6 +31,9 @@ function ratioPaddingTop(size: MediaIntrinsicSize): string {
   return `${(size.height / size.width) * 100}%`;
 }
 
+/** Below center so the short frame holds the cascade instead of the canopy. */
+const HERO_CROP_FOCUS_Y = 0.68;
+
 function HeroBackgroundVideo({
   src,
   poster,
@@ -50,6 +53,7 @@ function HeroBackgroundVideo({
       aria-hidden
       tabIndex={-1}
       fit={fit}
+      focusY={HERO_CROP_FOCUS_Y}
       onIntrinsicSize={onIntrinsicSize}
       className="pointer-events-none"
     />
@@ -94,7 +98,7 @@ export function HeroVideoSection() {
   const useExactRatio = Boolean(
     hasVideo && isPortraitOrientation && !knownLandscape,
   );
-  // Cover fills the shorter frame edge to edge, cropping top and bottom.
+  // Cover fills the shorter frame edge to edge. The crop sits below center.
   const videoFit: VideoObjectFit = "cover";
   const sizerSize = mediaSizeForSource ?? { width: 9, height: 16 };
 

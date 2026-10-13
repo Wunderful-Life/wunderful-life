@@ -115,7 +115,7 @@ function HeroForestBelt({ subtitle }: { subtitle: string }) {
           delay={0.48}
           className="relative z-10 w-full"
         >
-          <p className="hero-intro-belt-copy text-center font-serif text-paper">
+          <p className="hero-intro-belt-copy text-center font-editorial text-paper">
             {subtitle}
           </p>
         </HeroEntrance>

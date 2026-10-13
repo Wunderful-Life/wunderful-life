@@ -19,6 +19,8 @@ type AutoplayLoopVideoProps = {
   eager?: boolean;
   /** Safari-safe box fit. Cover fills and may crop; contain never crops. */
   fit?: VideoObjectFit;
+  /** Vertical cover anchor. 0 is the top of the clip, 1 is the bottom. */
+  focusY?: number;
   onIntrinsicSize?: (size: MediaIntrinsicSize) => void;
   "aria-hidden"?: boolean;
   tabIndex?: number;
@@ -44,14 +46,22 @@ function scheduleIdle(callback: () => void) {
   return () => window.clearTimeout(timeoutId);
 }
 
-function applyCssObjectFit(video: HTMLVideoElement, fit: VideoObjectFit) {
+function objectPositionForFocus(focusY: number): string {
+  return `center ${focusY * 100}%`;
+}
+
+function applyCssObjectFit(
+  video: HTMLVideoElement,
+  fit: VideoObjectFit,
+  focusY: number,
+) {
   video.style.width = "100%";
   video.style.height = "100%";
   video.style.maxWidth = "";
   video.style.maxHeight = "";
   video.style.inset = "0";
   video.style.objectFit = fit;
-  video.style.objectPosition = "center";
+  video.style.objectPosition = objectPositionForFocus(focusY);
   video.style.transformOrigin = "center center";
   video.style.transform = "translateZ(0)";
 }
@@ -81,6 +91,7 @@ function fitVideoToDisplaySize(
   video: HTMLVideoElement,
   container: HTMLElement,
   objectFit: VideoObjectFit,
+  focusY: number,
 ) {
   const width = container.clientWidth;
   const height = container.clientHeight;
@@ -93,11 +104,12 @@ function fitVideoToDisplaySize(
       devicePixelRatio: window.devicePixelRatio || 1,
       // Full-viewport heroes do not need 3x decode; that stalls first paint.
       maxDevicePixelRatio: width * height > 400_000 ? 1.25 : 2,
+      focusY,
     },
     objectFit,
   );
   if (!fit) {
-    applyCssObjectFit(video, objectFit);
+    applyCssObjectFit(video, objectFit, focusY);
     return;
   }
 
@@ -110,7 +122,7 @@ function fitVideoToDisplaySize(
   video.style.right = "auto";
   video.style.bottom = "auto";
   video.style.objectFit = "fill";
-  video.style.objectPosition = "center";
+  video.style.objectPosition = objectPositionForFocus(focusY);
   video.style.transformOrigin = "0 0";
   video.style.transform =
     fit.scale === 1 ? "translateZ(0)" : `scale(${fit.scale}) translateZ(0)`;
@@ -165,6 +177,7 @@ export function AutoplayLoopVideo({
   showMuteToggle = false,
   eager = false,
   fit = "cover",
+  focusY = 0.5,
   onIntrinsicSize,
   "aria-hidden": ariaHidden,
   tabIndex,
@@ -606,7 +619,7 @@ export function AutoplayLoopVideo({
 
     const apply = () => {
       for (const video of [videoRef.current, standbyVideoRef.current]) {
-        if (video) fitVideoToDisplaySize(video, container, fit);
+        if (video) fitVideoToDisplaySize(video, container, fit, focusY);
       }
     };
     apply();
@@ -628,7 +641,7 @@ export function AutoplayLoopVideo({
       }
       window.removeEventListener("resize", apply);
     };
-  }, [activeSrc, standbySrc, fit]);
+  }, [activeSrc, standbySrc, fit, focusY]);
 
   useEffect(() => {
     if (!onIntrinsicSize) return;
@@ -671,10 +684,12 @@ export function AutoplayLoopVideo({
     };
   }, [activeSrc, onIntrinsicSize, poster]);
 
+  const objectPosition = objectPositionForFocus(focusY);
+
   const clipClass = (index: 0 | 1) => {
     const shown = index === reveal || (index === front && playing);
     return [
-      "autoplay-loop-video pointer-events-none absolute inset-0 h-full w-full object-center",
+      "autoplay-loop-video pointer-events-none absolute inset-0 h-full w-full",
       index === reveal ? "z-[3]" : "z-[1]",
       fit === "contain" ? "object-contain" : "object-cover",
       // iOS Safari will not decode a fully transparent <video>, so keep a
@@ -716,6 +731,7 @@ export function AutoplayLoopVideo({
         tabIndex={tabIndex}
         aria-hidden={ariaHidden}
         className={clipClass(0)}
+        style={{ objectPosition }}
       />
       <video
         ref={standbyVideoRef}
@@ -732,6 +748,7 @@ export function AutoplayLoopVideo({
         disableRemotePlayback
         aria-hidden
         className={clipClass(1)}
+        style={{ objectPosition }}
       />
       {poster ? (
         // Native img so this URL matches the layout preload (next/image would rewrite it).
@@ -741,18 +758,20 @@ export function AutoplayLoopVideo({
           alt=""
           aria-hidden
           fetchPriority={eager ? "high" : "auto"}
-          className={`pointer-events-none absolute inset-0 z-[4] h-full w-full object-center ${
+          className={`pointer-events-none absolute inset-0 z-[4] h-full w-full ${
             fit === "contain" ? "object-contain" : "object-cover"
           } ${showCover ? "opacity-100" : "opacity-0"}`}
+          style={{ objectPosition }}
         />
       ) : null}
       {!hasPoster ? (
         <canvas
           ref={canvasRef}
           aria-hidden
-          className={`pointer-events-none absolute inset-0 z-[4] h-full w-full object-center ${
+          className={`pointer-events-none absolute inset-0 z-[4] h-full w-full ${
             fit === "contain" ? "object-contain" : "object-cover"
           } ${showCover && hasFrame ? "opacity-100" : "opacity-0"}`}
+          style={{ objectPosition }}
         />
       ) : null}
       {showMuteToggle ? (

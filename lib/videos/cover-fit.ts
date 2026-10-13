@@ -26,7 +26,14 @@ type FitVideoOptions = {
   containerHeight: number;
   devicePixelRatio: number;
   maxDevicePixelRatio: number;
+  /** 0 pins the top of the frame, 1 pins the bottom. Default is centered. */
+  focusY?: number;
 };
+
+function focusYOf(value: number | undefined): number {
+  if (value === undefined || !Number.isFinite(value)) return 0.5;
+  return Math.min(1, Math.max(0, value));
+}
 
 function fitVideoToBox(
   options: FitVideoOptions,
@@ -67,7 +74,7 @@ function fitVideoToBox(
     width,
     height,
     left: (containerWidth - cssWidth) / 2,
-    top: (containerHeight - cssHeight) / 2,
+    top: focusYOf(options.focusY) * (containerHeight - cssHeight),
     scale: 1 / dpr,
   };
 }
