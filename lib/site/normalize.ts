@@ -76,10 +76,6 @@ const DEFAULT_BRANDS: SiteContent["brands"] = {
   visible: true,
   heading: "Brands I've worked with",
   items: [
-    { id: "brand-1", name: "Brand 1" },
-    { id: "brand-2", name: "Brand 2" },
-    { id: "brand-3", name: "Brand 3" },
-    { id: "brand-4", name: "Brand 4" },
   ],
 };
 
@@ -94,17 +90,17 @@ const DEFAULT_UGC_BENEFITS: SiteContent["ugcBenefits"] = {
     {
       id: "authentic",
       value: "2.4×",
-      label: "more likely to feel authentic",
+      label: "more likely to call UGC authentic than brand-created content",
     },
     {
       id: "trustworthy",
       value: "73%",
-      label: "say UGC builds brand trust",
+      label: "of shoppers say UGC increases their purchasing confidence",
     },
     {
       id: "influences",
       value: "79%",
-      label: "say UGC influences what they buy",
+      label: "of people say UGC highly impacts their purchasing decisions",
     },
   ],
   calloutLabel: "Did you know?",
@@ -160,37 +156,52 @@ const DEFAULT_TESTIMONIALS: SiteContent["testimonials"] = {
   visible: true,
   eyebrow: "Social Proof",
   heading: "Kind Words",
-  items: [
-    {
-      id: "warm-natural",
-      quote:
-        "Emily brought such a warm, natural presence to the content. The video felt polished without losing that real-life charm.",
-      name: "Sample Brand Partner",
-      role: "Lifestyle campaign",
-    },
-    {
-      id: "easy-collaboration",
-      quote:
-        "The creative direction was thoughtful, on-brand, and easy to use across our social channels.",
-      name: "Example Client",
-      role: "Wellness launch",
-    },
-    {
-      id: "easy-to-book",
-      quote:
-        "Booking Emily was simple, and the turnaround gave us more than we needed for the launch week.",
-      name: "Sample Studio Lead",
-      role: "Product story",
-    },
-    {
-      id: "audience-fit",
-      quote:
-        "Her delivery felt like a friend sharing a find, which is exactly the tone we wanted for this line.",
-      name: "Example Shop Owner",
-      role: "Seasonal collection",
-    },
-  ],
+  // Only real client testimonials belong here. Sample copy lives in
+  // DEV_SAMPLE_TESTIMONIALS and is never shown in production.
+  items: [],
 };
+
+/** Placeholder testimonials for local development only. */
+const DEV_SAMPLE_TESTIMONIALS: SiteContent["testimonials"]["items"] = [
+  {
+    id: "dev-sample-1",
+    quote: "Sample testimonial for local development.",
+    name: "Sample Brand Partner",
+    role: "Dev placeholder",
+  },
+];
+
+const SAMPLE_TESTIMONIAL_NAMES = new Set([
+  "sample brand partner",
+  "example client",
+  "sample studio lead",
+  "example shop owner",
+]);
+
+const SAMPLE_TESTIMONIAL_QUOTES = [
+  "emily brought such a warm, natural presence",
+  "the creative direction was thoughtful, on-brand",
+  "booking emily was simple, and the turnaround",
+  "her delivery felt like a friend sharing a find",
+];
+
+/** True for placeholder testimonials that must never render publicly. */
+export function isSampleTestimonial(item: { name?: string; quote?: string }): boolean {
+  const name = (item.name ?? "").trim().toLowerCase();
+  const quote = (item.quote ?? "").trim().toLowerCase();
+  if (SAMPLE_TESTIMONIAL_NAMES.has(name)) return true;
+  if (/^(sample|example)\b/.test(name)) return true;
+  return SAMPLE_TESTIMONIAL_QUOTES.some((sample) => quote.startsWith(sample));
+}
+
+const ALLOW_SAMPLE_TESTIMONIALS = process.env.NODE_ENV === "development";
+
+/** Strip a stray leading "#" in front of an absolute URL ("#https://..." -> "https://..."). */
+export function normalizeHref(value: unknown): string {
+  if (typeof value !== "string") return "";
+  const trimmed = value.trim();
+  return trimmed.replace(/^#+(?=(https?:|mailto:)\/?\/?)/i, "");
+}
 
 function defaultAboutPhotoFrame(index: number): AboutPhotoFrame {
   if (index === 0) return "arch";
@@ -459,6 +470,8 @@ function normalizeBrands(items: unknown): BrandItem[] {
       const brand = item as Partial<BrandItem>;
       const name = text(brand.name, "");
       if (!name) return null;
+      // Never show unfilled placeholder brands ("Brand 1", "Brand 3", ...).
+      if (/^brand\s*\d+$/i.test(name)) return null;
 
       return {
         id: text(brand.id, slugId(name, `brand-${index + 1}`)),
@@ -639,7 +652,13 @@ export function normalizeSiteContent(raw: SiteContentInput): SiteContent {
       showPhoto: closingCta.showPhoto !== false,
       photo: normalizeCtaPhoto(closingCta.photo, closingCta.posterPath),
     },
-    social: raw.social,
+    social: raw.social
+      ? {
+          ...raw.social,
+          email: normalizeHref(raw.social.email),
+          instagram: normalizeHref(raw.social.instagram),
+        }
+      : raw.social,
     services: normalizeServices(raw.services),
     testimonials: {
       visible:
@@ -648,25 +667,22 @@ export function normalizeSiteContent(raw: SiteContentInput): SiteContent {
           : DEFAULT_TESTIMONIALS.visible,
       eyebrow: text(testimonials.eyebrow, DEFAULT_TESTIMONIALS.eyebrow),
       heading: text(testimonials.heading, DEFAULT_TESTIMONIALS.heading),
-      items: Array.isArray(testimonials.items)
+      items: (Array.isArray(testimonials.items)
         ? testimonials.items
             .map((testimonial, index) => ({
               id: text(testimonial.id, `testimonial-${index + 1}`),
-              quote: text(
-                testimonial.quote,
-                DEFAULT_TESTIMONIALS.items[index]?.quote ?? "",
-              ),
-              name: text(
-                testimonial.name,
-                DEFAULT_TESTIMONIALS.items[index]?.name ?? "",
-              ),
-              role: text(
-                testimonial.role,
-                DEFAULT_TESTIMONIALS.items[index]?.role ?? "",
-              ),
+              quote: text(testimonial.quote, ""),
+              name: text(testimonial.name, ""),
+              role: text(testimonial.role, ""),
             }))
+            .filter(
+              (testimonial) =>
+                ALLOW_SAMPLE_TESTIMONIALS || !isSampleTestimonial(testimonial),
+            )
             .slice(0, MAX_TESTIMONIALS)
-        : DEFAULT_TESTIMONIALS.items,
+        : ALLOW_SAMPLE_TESTIMONIALS
+          ? DEV_SAMPLE_TESTIMONIALS
+          : DEFAULT_TESTIMONIALS.items),
     },
   };
 }

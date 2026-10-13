@@ -5,6 +5,7 @@ import { SectionButterfly } from "@/components/ui/ButterflyFlight";
 import { DecorMotifs } from "@/components/ui/DecorMotifs";
 import { SectionReveal, StaggerChildren, StaggerItem } from "@/components/ui/motion";
 import { useSiteContent } from "@/components/admin/AdminViewProvider";
+import { statSource } from "@/lib/site/statSources";
 
 /** Rotating tones for the circular stat cards, however many there are. */
 const STAT_TONES = ["light", "paper", "dark"] as const;
@@ -43,7 +44,9 @@ export function UgcBenefitsSection() {
 
         {ugcBenefits.stats.length > 0 && (
           <StaggerChildren className="mx-auto mt-7 grid max-w-4xl grid-cols-3 items-start gap-2 sm:mt-10 sm:gap-6">
-            {ugcBenefits.stats.map((stat, index) => (
+            {ugcBenefits.stats.map((stat, index) => {
+              const source = statSource(stat.value);
+              return (
               <StaggerItem key={stat.id} variant="fadeUp" className="min-w-0">
                 <article className="ugc-stat">
                   <div
@@ -53,10 +56,24 @@ export function UgcBenefitsSection() {
                       {stat.value}
                     </p>
                   </div>
-                  <p className="ugc-stat-label">{stat.label}</p>
+                  <p className="ugc-stat-label">{source?.label ?? stat.label}</p>
+                  {source && (
+                    <p className="mt-1 text-center text-[0.6rem] leading-snug text-paper/70 sm:text-[0.7rem]">
+                      Source:{" "}
+                      <a
+                        href={source.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline underline-offset-2 hover:text-paper"
+                      >
+                        {source.sourceName}
+                      </a>
+                    </p>
+                  )}
                 </article>
               </StaggerItem>
-            ))}
+              );
+            })}
           </StaggerChildren>
         )}
 

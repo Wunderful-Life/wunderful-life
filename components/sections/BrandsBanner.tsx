@@ -72,18 +72,8 @@ export function BrandsBanner() {
             <ul className="ugc-brands-list">
               {items.map((brand) => (
                 <li key={brand.id} className="ugc-brands-item">
-                  {brand.url ? (
-                    <a
-                      href={brand.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="transition hover:opacity-75"
-                    >
-                      <BrandMark brand={brand} />
-                    </a>
-                  ) : (
-                    <BrandMark brand={brand} />
-                  )}
+                  {/* Brand logos are plain images, never links. */}
+                  <BrandMark brand={brand} />
                 </li>
               ))}
             </ul>
