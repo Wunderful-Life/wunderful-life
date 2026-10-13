@@ -44,13 +44,13 @@ export default async function WorkDetailPage({ params }: WorkDetailPageProps) {
   ].filter((item): item is { label: string; value: string } => item !== null);
 
   return (
-    <div className="section-wash-blush relative min-h-screen px-4 py-16 sm:px-6">
+    <div className="section-wash-blush relative min-h-screen px-4 pt-4 pb-10 sm:px-6 sm:pt-8">
       <div className="mx-auto max-w-5xl lg:max-w-6xl">
-        <AnimatedButton href="/work" variant="ghost" className="mb-8">
+        <AnimatedButton href="/work" variant="ghost" className="mb-3">
           ← Back to Work
         </AnimatedButton>
 
-        <div className="grid gap-12 lg:grid-cols-2 lg:items-start">
+        <div className="grid gap-4 lg:grid-cols-2 lg:items-start lg:gap-8">
           <SectionReveal>
             <DetailVideoPlayer key={video.id} video={video} />
           </SectionReveal>
@@ -61,21 +61,21 @@ export default async function WorkDetailPage({ params }: WorkDetailPageProps) {
                 {video.title}
               </h1>
               {video.brand.trim() && (
-                <p className="mt-2 text-lg text-muted">{video.brand}</p>
+                <p className="mt-1 text-base text-muted">{video.brand}</p>
               )}
             </SectionReveal>
 
             {metadataItems.length > 0 && (
-              <SectionReveal delay={0.15} className="mt-8 space-y-4">
+              <SectionReveal delay={0.15} className="mt-4 space-y-2">
                 {metadataItems.map((item) => (
                   <article
                     key={item.label}
-                    className="rounded-2xl border-2 border-brown/10 bg-white/70 p-4 backdrop-blur-sm"
+                    className="rounded-xl border-2 border-brown/10 bg-white/70 px-3.5 py-2.5 backdrop-blur-sm"
                   >
                     <h2 className="font-label text-xs font-semibold tracking-[0.18em] text-blush-deep uppercase">
                       {item.label}
                     </h2>
-                    <p className="mt-2 text-brown">{item.value}</p>
+                    <p className="mt-0.5 text-brown">{item.value}</p>
                   </article>
                 ))}
               </SectionReveal>

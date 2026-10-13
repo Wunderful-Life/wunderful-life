@@ -750,6 +750,14 @@ body {
   max-width: 100%;
 }
 
+/* Fill the ratio box. A contained still leaves a light strip when the
+   measured box is a few pixels taller than the picture. */
+.detail-video-frame img,
+.detail-video-frame video {
+  object-fit: cover;
+  object-position: center;
+}
+
 @media (min-width: 64rem) {
   .detail-video-frame {
     width: min(100%, calc(min(74svh, 42rem) * var(--detail-ar)));

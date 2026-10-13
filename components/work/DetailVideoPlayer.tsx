@@ -83,11 +83,11 @@ export function DetailVideoPlayer({ video }: DetailVideoPlayerProps) {
 
   return (
     <div className="flex w-full justify-center">
-      <div className="detail-video-frame" style={shellStyle}>
-        <div
-          className="relative w-full overflow-hidden rounded-[1.75rem] bg-brown/10 shadow-[0_18px_44px_rgba(92,58,46,0.12)] ring-1 ring-white/80"
-          style={frameStyle}
-        >
+      <div
+        className="detail-video-frame overflow-hidden rounded-[1.75rem] border-[3px] border-sage-deep bg-forest-deep shadow-[0_16px_36px_rgba(51,81,61,0.16)]"
+        style={shellStyle}
+      >
+        <div className="relative w-full" style={frameStyle}>
         {playing && !playbackError ? (
           <video
             ref={videoRef}
@@ -95,7 +95,7 @@ export function DetailVideoPlayer({ video }: DetailVideoPlayerProps) {
             controls
             playsInline
             preload="metadata"
-            className="absolute inset-0 h-full w-full bg-black object-contain"
+            className="absolute inset-0 h-full w-full bg-forest-deep object-cover"
             onLoadedMetadata={(event) => {
               const { videoWidth, videoHeight } = event.currentTarget;
               if (!usableSize(videoWidth, videoHeight)) return;
@@ -127,9 +127,9 @@ export function DetailVideoPlayer({ video }: DetailVideoPlayerProps) {
               alt={video.title}
               sizes="(max-width: 1024px) 88vw, 420px"
               videoSrc={video.videoPath}
-              className="object-contain"
+              className="object-cover object-center"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-brown/30 via-brown/5 to-white/10 transition group-hover/play:from-brown/24" />
+            <div className="absolute inset-0 bg-gradient-to-t from-forest-deep/20 via-transparent to-transparent" />
             {playbackError ? (
               <span className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-brown/72 px-6 text-center">
                 <span className="text-sm font-medium text-white">

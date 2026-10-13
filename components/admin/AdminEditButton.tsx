@@ -42,7 +42,7 @@ export function AdminEditButton({
     <button
       type="button"
       onClick={handleClick}
-      className={`absolute top-4 right-4 z-20 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-label text-[11px] font-semibold tracking-[0.12em] uppercase shadow-sm backdrop-blur-md transition ${TONE_CLASS[tone]} ${className}`}
+      className={`absolute top-4 right-4 z-40 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-label text-[11px] font-semibold tracking-[0.12em] uppercase shadow-sm backdrop-blur-md transition ${TONE_CLASS[tone]} ${className}`}
     >
       <span aria-hidden>✎</span>
       {label}
