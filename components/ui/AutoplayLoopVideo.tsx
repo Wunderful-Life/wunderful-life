@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { isRemoteMediaUrl } from "@/lib/media/urls";
 import {
   containFitForVideo,
   coverFitForVideo,
@@ -694,6 +693,11 @@ export function AutoplayLoopVideo({
       className="autoplay-loop-clip absolute inset-0 h-full w-full overflow-hidden"
       style={{ ["--loop-fade" as string]: `${LOOP_FADE_MS}ms` }}
     >
+      {/*
+        No crossOrigin. R2 does not send Access-Control-Allow-Origin, and an
+        anonymous media request makes Chrome reject a playable MP4. The loop
+        dissolve stacks two video elements; it does not read pixels.
+      */}
       <video
         ref={videoRef}
         src={activeSrc ?? undefined}
@@ -709,7 +713,6 @@ export function AutoplayLoopVideo({
         controlsList="nodownload nofullscreen noremoteplayback"
         disablePictureInPicture
         disableRemotePlayback
-        crossOrigin={isRemoteMediaUrl(src) ? "anonymous" : undefined}
         tabIndex={tabIndex}
         aria-hidden={ariaHidden}
         className={clipClass(0)}
@@ -727,7 +730,6 @@ export function AutoplayLoopVideo({
         controlsList="nodownload nofullscreen noremoteplayback"
         disablePictureInPicture
         disableRemotePlayback
-        crossOrigin={isRemoteMediaUrl(src) ? "anonymous" : undefined}
         aria-hidden
         className={clipClass(1)}
       />

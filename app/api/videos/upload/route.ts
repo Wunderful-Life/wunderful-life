@@ -19,11 +19,16 @@ export async function POST(request: Request) {
       dir?: unknown;
       filename?: unknown;
       contentType?: unknown;
+      byteLength?: unknown;
     };
     const dir = typeof body.dir === "string" ? body.dir : "";
     const filename = typeof body.filename === "string" ? body.filename.trim() : "";
     const contentType =
       typeof body.contentType === "string" ? body.contentType.trim() : undefined;
+    const byteLength =
+      typeof body.byteLength === "number" && Number.isInteger(body.byteLength)
+        ? body.byteLength
+        : undefined;
 
     if (!isMediaUploadDir(dir) || !filename) {
       return NextResponse.json(
@@ -32,7 +37,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const upload = await createSignedMediaUpload(dir, filename, contentType);
+    const upload = await createSignedMediaUpload(
+      dir,
+      filename,
+      contentType,
+      byteLength,
+    );
     return NextResponse.json(upload);
   } catch (error) {
     if (error instanceof StorageError) {

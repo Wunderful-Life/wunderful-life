@@ -721,6 +721,31 @@ body {
 }
 
 /*
+ * Work detail player. Width follows the clip's own ratio, capped by viewport
+ * height so a portrait video stays a rounded frame instead of a full-bleed
+ * column. Desktop gets a slightly taller cap when the window has room.
+ * Height comes from padding-top on the element, not aspect-ratio — Safari
+ * drops aspect-ratio on some layout boxes and crops the frame.
+ */
+.detail-video-frame {
+  --detail-ar: 0.5625;
+  width: min(100%, calc(min(64svh, 34rem) * var(--detail-ar)));
+  max-width: 100%;
+}
+
+@media (min-width: 64rem) {
+  .detail-video-frame {
+    width: min(100%, calc(min(74svh, 42rem) * var(--detail-ar)));
+  }
+}
+
+@media (min-width: 80rem) {
+  .detail-video-frame {
+    width: min(100%, calc(min(76svh, 44rem) * var(--detail-ar)));
+  }
+}
+
+/*
  * CSS iPhone 15 Pro chassis. PNG bezels sit over the screen; Safari paints
  * their transparent hole as opaque black, so the carousel never uses them.
  * Geometry matches the official frame fractions (1419×2796).

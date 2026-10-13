@@ -1,6 +1,6 @@
 import type { MediaUploadDir } from "./media-upload";
+import { beginOriginChunkUpload } from "./origin-upload";
 import {
-  createSignedR2Upload,
   deleteFromR2,
   hasR2MediaConfig,
   r2KeyFromPublicUrl,
@@ -30,25 +30,47 @@ export function activeMediaHost(): "r2" | "supabase" | "none" {
 }
 
 /**
- * Supabase signed uploads expect a multipart form; R2 presigned PUTs expect the
- * raw bytes plus the exact headers that were signed. The browser follows
- * whichever mode the server hands back.
+ * Supabase signed uploads expect a multipart form. R2 cannot accept a browser
+ * PUT until the bucket sends CORS headers, so those files are posted back to
+ * this site in chunks and written with the server credentials.
  */
 export type SignedMediaUpload = {
   uploadUrl: string;
   publicUrl: string;
   path: string;
-  mode: "supabase-form" | "raw-put";
+  mode: "supabase-form" | "raw-put" | "origin-chunks";
   headers?: Record<string, string>;
+  chunkSize?: number;
+  chunkCount?: number;
+  uploadToken?: string;
+  completeUrl?: string;
+  abortUrl?: string;
 };
 
 export async function createSignedMediaUpload(
   dir: MediaUploadDir,
   originalName: string,
   contentType?: string,
+  byteLength?: number,
 ): Promise<SignedMediaUpload> {
   if (hasR2MediaConfig()) {
-    return createSignedR2Upload(dir, originalName, contentType);
+    const upload = beginOriginChunkUpload(
+      dir,
+      originalName,
+      contentType,
+      byteLength ?? 0,
+    );
+    return {
+      uploadUrl: "/api/videos/upload/chunk",
+      completeUrl: "/api/videos/upload/complete",
+      abortUrl: "/api/videos/upload/abort",
+      publicUrl: upload.publicUrl,
+      path: upload.path,
+      mode: "origin-chunks",
+      chunkSize: upload.chunkSize,
+      chunkCount: upload.chunkCount,
+      uploadToken: upload.uploadToken,
+    };
   }
   return {
     ...(await createSignedPublicMediaUpload(dir, originalName)),

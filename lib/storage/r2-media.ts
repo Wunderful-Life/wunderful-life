@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { extensionFromFilename } from "@/lib/files";
 import {
   DeleteObjectCommand,
+  GetObjectCommand,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
@@ -81,6 +82,20 @@ export function r2KeyFromPublicUrl(value: string): string | null {
   }
 }
 
+export function allocateR2Key(
+  dir: MediaUploadDir,
+  originalName: string,
+  contentType?: string,
+): { key: string; contentType: string } {
+  if (!isMediaUploadDir(dir)) {
+    throw new StorageError("That upload folder is not allowed.", 400);
+  }
+
+  const ext = extensionFromFilename(originalName) || defaultExtensionForDir(dir);
+  const key = `${dir}/${randomUUID()}${ext}`;
+  return { key, contentType: contentTypeForKey(key, contentType) };
+}
+
 function contentTypeForKey(key: string, provided?: string): string {
   if (provided && provided.includes("/")) return provided;
   switch (extensionFromFilename(key)) {
@@ -112,15 +127,11 @@ export async function createSignedR2Upload(
   mode: "raw-put";
   headers: Record<string, string>;
 }> {
-  if (!isMediaUploadDir(dir)) {
-    throw new StorageError("That upload folder is not allowed.", 400);
-  }
-
-  const ext = extensionFromFilename(originalName) || defaultExtensionForDir(dir);
-  const key = `${dir}/${randomUUID()}${ext}`;
+  const allocated = allocateR2Key(dir, originalName, contentType);
+  const key = allocated.key;
   // The signature covers these headers, so the browser must echo them exactly.
   const headers = {
-    "Content-Type": contentTypeForKey(key, contentType),
+    "Content-Type": allocated.contentType,
     "Cache-Control": PUBLIC_CACHE_CONTROL,
   };
 
@@ -144,13 +155,11 @@ export async function createSignedR2Upload(
   };
 }
 
-export async function uploadToR2(
+export async function putR2Bytes(
   key: string,
-  file: File,
+  body: Uint8Array,
   contentType?: string,
 ): Promise<string> {
-  const body = new Uint8Array(await file.arrayBuffer());
-
   try {
     await getClient().send(
       new PutObjectCommand({
@@ -158,7 +167,7 @@ export async function uploadToR2(
         Key: key,
         Body: body,
         CacheControl: PUBLIC_CACHE_CONTROL,
-        ContentType: contentType || file.type || undefined,
+        ContentType: contentType,
       }),
     );
   } catch (error) {
@@ -171,10 +180,26 @@ export async function uploadToR2(
   return r2PublicUrl(key);
 }
 
-export async function deleteFromR2(value: string): Promise<void> {
-  const key = r2KeyFromPublicUrl(value);
-  if (!key) return;
+export async function getR2ObjectBytes(key: string): Promise<Uint8Array> {
+  try {
+    const response = await getClient().send(
+      new GetObjectCommand({ Bucket: requireEnv("R2_BUCKET"), Key: key }),
+    );
+    const bytes = await response.Body?.transformToByteArray();
+    if (!bytes || bytes.byteLength === 0) {
+      throw new StorageError("An upload part is missing. Please try again.", 400);
+    }
+    return bytes;
+  } catch (error) {
+    if (error instanceof StorageError) throw error;
+    throw new StorageError(
+      `Could not read media: ${error instanceof Error ? error.message : "unknown error"}`,
+      503,
+    );
+  }
+}
 
+export async function deleteR2Key(key: string): Promise<void> {
   try {
     await getClient().send(
       new DeleteObjectCommand({ Bucket: requireEnv("R2_BUCKET"), Key: key }),
@@ -185,4 +210,19 @@ export async function deleteFromR2(value: string): Promise<void> {
       503,
     );
   }
+}
+
+export async function uploadToR2(
+  key: string,
+  file: File,
+  contentType?: string,
+): Promise<string> {
+  const body = new Uint8Array(await file.arrayBuffer());
+  return putR2Bytes(key, body, contentType || file.type || undefined);
+}
+
+export async function deleteFromR2(value: string): Promise<void> {
+  const key = r2KeyFromPublicUrl(value);
+  if (!key) return;
+  await deleteR2Key(key);
 }

@@ -45,14 +45,14 @@ export default async function WorkDetailPage({ params }: WorkDetailPageProps) {
 
   return (
     <div className="section-wash-blush relative min-h-screen px-4 py-16 sm:px-6">
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-5xl lg:max-w-6xl">
         <AnimatedButton href="/work" variant="ghost" className="mb-8">
           ← Back to Work
         </AnimatedButton>
 
         <div className="grid gap-12 lg:grid-cols-2 lg:items-start">
           <SectionReveal>
-            <DetailVideoPlayer video={video} />
+            <DetailVideoPlayer key={video.id} video={video} />
           </SectionReveal>
 
           <div>

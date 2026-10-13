@@ -56,17 +56,30 @@ export function PhoneVideoPlayer({
     onActivate(null);
   }, [onActivate]);
 
-  useEffect(() => {
-    const element = videoRef.current;
-    if (!isPlaying || !element) return;
-
+  const playElement = useCallback((element: HTMLVideoElement | null) => {
+    if (!element) return;
     const playPromise = element.play();
     if (playPromise) {
       void playPromise.catch(() => {
         setPlaybackError(true);
       });
     }
-  }, [isPlaying, video.videoPath]);
+  }, []);
+
+  // AnimatePresence waits for the thumbnail to exit before mounting the
+  // player, so the effect below can run while videoRef is still null.
+  const bindVideo = useCallback(
+    (element: HTMLVideoElement | null) => {
+      videoRef.current = element;
+      if (element && isPlaying) playElement(element);
+    },
+    [isPlaying, playElement],
+  );
+
+  useEffect(() => {
+    if (!isPlaying) return;
+    playElement(videoRef.current);
+  }, [isPlaying, playElement, video.videoPath]);
 
   useEffect(() => {
     if (!isPlaying) {
@@ -151,7 +164,7 @@ export function PhoneVideoPlayer({
                   </div>
                 ) : (
                   <video
-                    ref={videoRef}
+                    ref={bindVideo}
                     src={video.videoPath}
                     controls
                     playsInline
