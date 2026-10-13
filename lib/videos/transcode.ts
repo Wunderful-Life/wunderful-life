@@ -1,4 +1,7 @@
-import { containerHasAudio } from "@/lib/videos/container-audio";
+import {
+  containerHasAudio,
+  SOUNDTRACK_LOST_MESSAGE,
+} from "@/lib/videos/container-audio";
 import { toErrorMessage } from "@/lib/errors";
 import { extensionFromFilename } from "@/lib/files";
 import {
@@ -25,6 +28,7 @@ import {
   getFFmpeg,
   readFileBytes,
 } from "@/lib/videos/ffmpeg";
+import { transcodePackets } from "@/lib/videos/packet-transcode";
 import type { VideoUploadProfile } from "@/lib/videos/profile";
 
 export type { VideoUploadProfile };
@@ -138,7 +142,7 @@ function canRemuxInWasm(file: File): boolean {
   return !prefersBrowserRecorder() && file.size <= FFMPEG_SAFE_SOURCE_BYTES;
 }
 
-type EncodeBackend = "recorder" | "ffmpeg";
+type EncodeBackend = "packets" | "recorder" | "ffmpeg";
 
 type EncodePlan = {
   first: EncodeBackend;
@@ -153,6 +157,28 @@ function encodePlan(file: File): EncodePlan {
     return { first: "recorder", fallback: "ffmpeg" };
   }
   return { first: "ffmpeg", fallback: "recorder" };
+}
+
+function encodeAttempts(file: File, profile: VideoUploadProfile): EncodeBackend[] {
+  const keepAudio = !settingsForProfile(profile).stripAudio;
+  const fitsInWasm = file.size <= FFMPEG_SAFE_SOURCE_BYTES;
+  if (!keepAudio) {
+    const plan = encodePlan(file);
+    return plan.fallback ? [plan.first, plan.fallback] : [plan.first];
+  }
+
+  // Demux the soundtrack first. Playback capture loses it when the file
+  // picker will not allow an audible play().
+  const attempts: EncodeBackend[] = ["packets"];
+  if (prefersBrowserRecorder()) {
+    attempts.push("recorder");
+    if (fitsInWasm) attempts.push("ffmpeg");
+  } else if (fitsInWasm) {
+    attempts.push("ffmpeg", "recorder");
+  } else {
+    attempts.push("recorder");
+  }
+  return attempts;
 }
 
 async function exceedsMaxDuration(
@@ -201,8 +227,6 @@ type CanvasCaptureTrack = MediaStreamTrack & {
   requestFrame?: () => void;
 };
 
-const AUDIO_LOST_MESSAGE = "Could not keep this clip's sound while compressing.";
-
 async function tryPlayMuted(video: HTMLVideoElement): Promise<boolean> {
   video.muted = true;
   video.defaultMuted = true;
@@ -222,7 +246,7 @@ function playAudible(video: HTMLVideoElement): Promise<boolean> {
   video.removeAttribute("muted");
   try {
     return video.play().then(
-      () => !video.paused && !video.muted && video.volume > 0,
+      () => !video.paused && !video.muted,
       () => false,
     );
   } catch {
@@ -279,7 +303,7 @@ function tapSilentSpeakers(video: HTMLVideoElement): SpeakerTap | null {
       },
     };
   } catch (error) {
-    console.warn(AUDIO_LOST_MESSAGE, error);
+    console.warn(SOUNDTRACK_LOST_MESSAGE, error);
     void context.close();
     return null;
   }
@@ -355,14 +379,22 @@ function recordingAudioTracks(
   video: CapturableVideo,
   tap: SpeakerTap | null,
 ): MediaStreamTrack[] {
-  if (tap && tap.tracks.length > 0) return tap.tracks;
-  if (video.muted || video.volume === 0) return [];
+  const tapped =
+    tap && tap.context.state === "running"
+      ? tap.tracks.filter((track) => track.readyState === "live")
+      : [];
+  if (tapped.length > 0) return tapped;
+  // A muted element captures silence. An unmuted one still has its samples
+  // when the Web Audio graph never reached "running".
+  if (video.muted) return [];
   try {
     const captured =
       video.captureStream?.(30) ?? video.mozCaptureStream?.(30) ?? null;
-    return captured?.getAudioTracks() ?? [];
+    return (captured?.getAudioTracks() ?? []).filter(
+      (track) => track.readyState === "live",
+    );
   } catch (error) {
-    console.warn(AUDIO_LOST_MESSAGE, error);
+    console.warn(SOUNDTRACK_LOST_MESSAGE, error);
     return [];
   }
 }
@@ -373,11 +405,9 @@ async function outputDroppedAudio(
   keepAudio: boolean,
 ): Promise<boolean> {
   if (!keepAudio) return false;
-  const outputAudio = await containerHasAudio(output);
-  if (outputAudio === true) return false;
   const sourceAudio = await containerHasAudio(source);
-  if (outputAudio === false) return sourceAudio !== false;
-  return sourceAudio === true;
+  if (sourceAudio !== true) return false;
+  return (await containerHasAudio(output)) === false;
 }
 
 function extensionForRecorderMime(mimeType: string): { ext: string; type: string } {
@@ -487,7 +517,7 @@ async function recordByPlayback(
 ): Promise<File> {
   const keepAudio = !settings.stripAudio;
   if (keepAudio && audioTracks.length === 0) {
-    throw new Error(AUDIO_LOST_MESSAGE);
+    throw new Error(SOUNDTRACK_LOST_MESSAGE);
   }
 
   const canvasStream = captureCanvasStream(canvas, 30);
@@ -512,7 +542,7 @@ async function recordByPlayback(
     recorder.start(250);
     const playing = keepAudio ? await playAudible(video) : await tryPlayMuted(video);
     if (!playing) {
-      throw new Error(keepAudio ? AUDIO_LOST_MESSAGE : "Playback was blocked.");
+      throw new Error(keepAudio ? SOUNDTRACK_LOST_MESSAGE : "Playback was blocked.");
     }
 
     const draw = () => {
@@ -702,15 +732,8 @@ async function transcodeWithMediaRecorder(
         }
 
         const audioTracks = keepAudio ? recordingAudioTracks(video, audio) : [];
-        if (
-          keepAudio &&
-          (video.muted ||
-            video.volume === 0 ||
-            !playing ||
-            audioTracks.length === 0 ||
-            (audio !== null && audio.context.state !== "running"))
-        ) {
-          throw new Error(AUDIO_LOST_MESSAGE);
+        if (keepAudio && (!playing || audioTracks.length === 0)) {
+          throw new Error(SOUNDTRACK_LOST_MESSAGE);
         }
 
         if (!video.videoWidth || !video.videoHeight) {
@@ -749,7 +772,7 @@ async function transcodeWithMediaRecorder(
               audioTracks,
             );
             if (await outputDroppedAudio(file, recorded, keepAudio)) {
-              throw new Error(AUDIO_LOST_MESSAGE);
+              throw new Error(SOUNDTRACK_LOST_MESSAGE);
             }
             return recorded;
           } catch (error) {
@@ -763,7 +786,7 @@ async function transcodeWithMediaRecorder(
         }
 
         if (keepAudio) {
-          throw new Error(AUDIO_LOST_MESSAGE);
+          throw new Error(SOUNDTRACK_LOST_MESSAGE);
         }
 
         return recordBySeeking(
@@ -835,13 +858,14 @@ async function transcodeToMp4(
       !settingsForProfile(profile).stripAudio,
     )
   ) {
-    throw new Error(AUDIO_LOST_MESSAGE);
+    throw new Error(SOUNDTRACK_LOST_MESSAGE);
   }
   return output;
 }
 
-async function remuxToMp4(
+async function runRemux(
   file: File,
+  args: string[],
   onProgress?: (message: string) => void,
 ): Promise<File> {
   onProgress?.("Optimizing video so it can start sooner…");
@@ -849,30 +873,71 @@ async function remuxToMp4(
   const inputExt = extensionFromFilename(file.name) || ".mp4";
   const inputName = `input${inputExt}`;
   const outputName = "output.mp4";
-
-  await ff.writeFile(inputName, await readFileBytes(file));
-  const exitCode = await withTimeout(
-    ff.exec(["-i", inputName, "-c", "copy", "-movflags", "+faststart", outputName]),
-    FFMPEG_CONVERT_TIMEOUT_MS,
-    "Video conversion timed out.",
+  const command = args.map((arg) =>
+    arg === "{input}" ? inputName : arg === "{output}" ? outputName : arg,
   );
 
-  if (exitCode !== 0) {
-    throw new Error("Could not optimize this video for fast start.");
+  await ff.writeFile(inputName, await readFileBytes(file));
+  try {
+    const exitCode = await withTimeout(
+      ff.exec(command),
+      FFMPEG_CONVERT_TIMEOUT_MS,
+      "Video conversion timed out.",
+    );
+    if (exitCode !== 0) {
+      throw new Error("Could not optimize this video for fast start.");
+    }
+
+    const data = await ff.readFile(outputName);
+    const bytes = bytesFromFfmpegFile(data);
+    if (bytes.byteLength === 0) {
+      throw new Error("Could not optimize this video for fast start.");
+    }
+
+    const baseName = file.name.replace(/\.[^.]+$/i, "") || "video";
+    return fileFromBytes(bytes, `${baseName}.mp4`, "video/mp4");
+  } finally {
+    await Promise.resolve(ff.deleteFile(inputName)).catch(() => undefined);
+    await Promise.resolve(ff.deleteFile(outputName)).catch(() => undefined);
   }
+}
 
-  const data = await ff.readFile(outputName);
-  await ff.deleteFile(inputName);
-  await ff.deleteFile(outputName);
-
-  const bytes = bytesFromFfmpegFile(data);
-
-  if (bytes.byteLength === 0) {
-    throw new Error("Could not optimize this video for fast start.");
+async function remuxToMp4(
+  file: File,
+  onProgress?: (message: string) => void,
+  keepAudio = false,
+): Promise<File> {
+  try {
+    return await runRemux(
+      file,
+      ["-i", "{input}", "-c", "copy", "-movflags", "+faststart", "{output}"],
+      onProgress,
+    );
+  } catch (error) {
+    if (!keepAudio) throw error;
+    // PCM and other QuickTime audio codecs cannot be copied into an MP4.
+    return runRemux(
+      file,
+      [
+        "-i",
+        "{input}",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0?",
+        "-c:v",
+        "copy",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "128k",
+        "-movflags",
+        "+faststart",
+        "{output}",
+      ],
+      onProgress,
+    );
   }
-
-  const baseName = file.name.replace(/\.[^.]+$/i, "") || "video";
-  return fileFromBytes(bytes, `${baseName}.mp4`, "video/mp4");
 }
 
 function assertUploadableVideo(file: File): File {
@@ -901,6 +966,8 @@ function runEncodeBackend(
   onProgress?: (message: string) => void,
 ): Promise<File> {
   switch (backend) {
+    case "packets":
+      return transcodePackets(file, profile, onProgress);
     case "recorder":
       return transcodeWithMediaRecorder(file, profile, onProgress);
     case "ffmpeg":
@@ -953,19 +1020,34 @@ async function compressForWebUpload(
     }
   }
 
-  const plan = encodePlan(file);
-  let compressed: File;
-  try {
-    compressed = await runEncodeBackend(plan.first, file, profile, onProgress);
-  } catch (error) {
-    if (!plan.fallback) throw error;
-    console.warn(
-      plan.first === "recorder"
-        ? "Browser recorder failed, trying converter:"
-        : "Client video transcode failed, trying browser recorder:",
-      error,
-    );
-    compressed = await runEncodeBackend(plan.fallback, file, profile, onProgress);
+  const keepAudio = !settings.stripAudio;
+  if (keepAudio) {
+    // Playback decode and packet decode fight over the same hardware decoder.
+    releasePortfolioAudio(file);
+  }
+
+  const attempts = encodeAttempts(file, profile);
+  let compressed: File | null = null;
+  let lastError: unknown = null;
+  for (const [index, backend] of attempts.entries()) {
+    try {
+      const produced = await runEncodeBackend(backend, file, profile, onProgress);
+      if (await outputDroppedAudio(file, produced, keepAudio)) {
+        throw new Error(SOUNDTRACK_LOST_MESSAGE);
+      }
+      compressed = produced;
+      break;
+    } catch (error) {
+      lastError = error;
+      if (index < attempts.length - 1) {
+        console.warn("Video compression attempt failed:", error);
+      }
+    }
+  }
+
+  if (!compressed) {
+    if (lastError instanceof Error) throw lastError;
+    throw new Error("Could not compress this video.");
   }
 
   if (isMp4File(file) && compressed.size >= file.size && !trimRequired) {
@@ -1011,7 +1093,17 @@ export async function prepareVideoForWebUpload(
   } catch (error) {
     if (settings.requireMp4 && !isMp4File(file)) {
       try {
-        return assertProfileOutput(await remuxToMp4(file, onProgress), profile);
+        const remuxed = await remuxToMp4(
+          file,
+          onProgress,
+          !settings.stripAudio,
+        );
+        if (
+          await outputDroppedAudio(file, remuxed, !settings.stripAudio)
+        ) {
+          throw new Error(SOUNDTRACK_LOST_MESSAGE);
+        }
+        return assertProfileOutput(remuxed, profile);
       } catch {
         throw new Error(
           toErrorMessage(

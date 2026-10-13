@@ -89,12 +89,13 @@ export function HeroVideoSection() {
     mediaSizeForSource &&
       mediaSizeForSource.width >= mediaSizeForSource.height,
   );
-  // Portrait clips keep their full frame on phones. On a wide desktop the
-  // same exact-ratio box is thousands of pixels tall and looks empty.
+  // Portrait clips size from their own ratio. On a wide desktop that box is
+  // thousands of pixels tall, so landscape uses the fixed cover frame.
   const useExactRatio = Boolean(
     hasVideo && isPortraitOrientation && !knownLandscape,
   );
-  const videoFit: VideoObjectFit = useExactRatio ? "contain" : "cover";
+  // Cover fills the shorter frame edge to edge, cropping top and bottom.
+  const videoFit: VideoObjectFit = "cover";
   const sizerSize = mediaSizeForSource ?? { width: 9, height: 16 };
 
   return (
@@ -105,8 +106,8 @@ export function HeroVideoSection() {
     >
       {/*
         In-flow padding-top box. A grid item with aspect-ratio is ignored in
-        Safari, which left vertical clips in an 85svh cover frame and cropped
-        the top and bottom.
+        Safari, which left vertical clips in a fixed cover frame and cropped
+        the top and bottom. Frame height is 70% of that original size.
       */}
       <div className="hero-video-sizers w-full min-w-0">
         {hasVideo ? (
@@ -120,7 +121,7 @@ export function HeroVideoSection() {
         ) : null}
         <div
           aria-hidden
-          className="hero-video-sizer-cover w-full min-h-[85svh]"
+          className="hero-video-sizer-cover w-full"
         />
       </div>
 

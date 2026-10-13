@@ -170,14 +170,17 @@ body {
 /*
  * Hero video band: only one sizer is visible. Exact ratio uses padding-top %
  * so a vertical clip lengthens the section instead of cover-cropping.
+ * Both frames are 70% of that height. The clip stays full-bleed on the
+ * sides and only the vertical crop changes.
  */
 .hero-video-sizer-exact {
   display: none;
-  padding-top: var(--hero-ratio-padding);
+  padding-top: calc(var(--hero-ratio-padding) * 0.7);
 }
 
 .hero-video-sizer-cover {
   display: block;
+  min-height: calc(85svh * 0.7);
 }
 
 .hero-video-band[data-exact="true"] .hero-video-sizer-exact {

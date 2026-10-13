@@ -1,6 +1,32 @@
 const HEAD_PROBE_BYTES = 4 * 1024 * 1024;
 const TAIL_PROBE_BYTES = 16 * 1024 * 1024;
 
+export const SOUNDTRACK_LOST_MESSAGE =
+  "Could not keep this clip's sound while compressing.";
+
+const AUDIO_SAMPLE_ENTRIES = new Set([
+  "mp4a",
+  "aac ",
+  "sowt",
+  "twos",
+  "lpcm",
+  "in24",
+  "in32",
+  "fl32",
+  "fl64",
+  "alac",
+  "opus",
+  "Opus",
+  "fLaC",
+  "flac",
+  ".mp3",
+  "samr",
+  "sawb",
+  "ac-3",
+  "ec-3",
+  "apac",
+]);
+
 type ContainerScan = {
   sawAudio: boolean;
   sawVideo: boolean;
@@ -59,7 +85,42 @@ function scanContainer(bytes: Uint8Array): ContainerScan {
     sawVideo = true;
   }
 
+  if (scanSampleEntries(bytes)) sawAudio = true;
+
   return { sawAudio, sawVideo };
+}
+
+function fourcc(bytes: Uint8Array, offset: number): string {
+  if (offset < 0 || offset + 4 > bytes.length) return "";
+  return String.fromCharCode(
+    bytes[offset] ?? 0,
+    bytes[offset + 1] ?? 0,
+    bytes[offset + 2] ?? 0,
+    bytes[offset + 3] ?? 0,
+  );
+}
+
+function readUint32(bytes: Uint8Array, offset: number): number | null {
+  if (offset < 0 || offset + 4 > bytes.length) return null;
+  return new DataView(bytes.buffer, bytes.byteOffset + offset, 4).getUint32(0);
+}
+
+/** Audio sample entries live in `stsd`, even when the handler box was missed. */
+function scanSampleEntries(bytes: Uint8Array): boolean {
+  for (let index = 0; index + 16 <= bytes.length; index += 1) {
+    if (fourcc(bytes, index) !== "stsd") continue;
+    const entryCount = readUint32(bytes, index + 8);
+    if (entryCount === null || entryCount < 1 || entryCount > 8) continue;
+
+    let cursor = index + 12;
+    for (let entry = 0; entry < entryCount; entry += 1) {
+      const size = readUint32(bytes, cursor);
+      if (size === null || size < 8 || cursor + size > bytes.length) break;
+      if (AUDIO_SAMPLE_ENTRIES.has(fourcc(bytes, cursor + 4))) return true;
+      cursor += size;
+    }
+  }
+  return false;
 }
 
 function mergeScan(left: ContainerScan, right: ContainerScan): ContainerScan {

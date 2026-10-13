@@ -114,27 +114,57 @@ export function AdminDashboard({
         className="max-w-full shrink-0 border-b border-brown/10 bg-cream/40 md:w-52 md:max-w-none md:border-r md:border-b-0 lg:w-56"
       >
         <div className="flex max-w-full flex-wrap gap-1 px-3 py-2 md:flex-col md:flex-nowrap md:gap-0.5 md:px-3 md:py-4">
-          {SECTIONS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => trySetView(item.id)}
-              className={`shrink-0 rounded-xl px-3 py-2 text-left transition md:w-full md:px-3 md:py-2.5 ${
-                view === item.id
-                  ? "bg-forest text-paper"
-                  : "text-ink hover:bg-white/80"
-              }`}
-            >
-              <span className="block text-sm font-medium">{item.label}</span>
-              <span
-                className={`hidden text-xs md:block ${
-                  view === item.id ? "text-paper/75" : "text-muted"
+          {SECTIONS.map((item) => {
+            const selected = view === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => trySetView(item.id)}
+                className={`flex shrink-0 items-center gap-2.5 rounded-xl px-3 py-2 text-left transition md:w-full md:px-3 md:py-2.5 ${
+                  selected
+                    ? "bg-forest text-paper"
+                    : "text-ink hover:bg-white/80"
                 }`}
               >
-                {item.hint}
-              </span>
-            </button>
-          ))}
+                {item.id === "add" ? (
+                  <span
+                    aria-hidden
+                    className={`flex size-7 shrink-0 items-center justify-center rounded-full ${
+                      selected
+                        ? "bg-paper text-forest shadow-[0_1px_0_rgba(35,57,42,0.18)]"
+                        : "bg-forest text-paper"
+                    }`}
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 14 14"
+                      fill="none"
+                      className="block"
+                    >
+                      <path
+                        d="M7 2.25v9.5M2.25 7h9.5"
+                        stroke="currentColor"
+                        strokeWidth="1.75"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </span>
+                ) : null}
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium">{item.label}</span>
+                  <span
+                    className={`hidden text-xs md:block ${
+                      selected ? "text-paper/75" : "text-muted"
+                    }`}
+                  >
+                    {item.hint}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
         </div>
       </nav>
 
