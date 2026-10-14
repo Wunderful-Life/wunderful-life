@@ -57,6 +57,8 @@ function HeroClickToPlay({
     video.removeAttribute("muted");
     video.volume = 1;
     video.playsInline = true;
+    video.setAttribute("playsinline", "true");
+    video.setAttribute("webkit-playsinline", "true");
     if (assignedSrcRef.current !== src || video.error) {
       video.src = src;
       assignedSrcRef.current = src;
@@ -104,14 +106,16 @@ function HeroClickToPlay({
   }
 
   return (
-    <div className="absolute inset-0">
+    <div
+      className={`hero-video-frame absolute inset-0 ${started ? "is-playing" : ""}`}
+    >
       {poster ? (
         <Image
           src={poster}
           alt=""
           fill
           priority
-          sizes="(max-width: 768px) 100vw, 72vh"
+          sizes="(max-width: 640px) 100vw, 72vh"
           className={`pointer-events-none object-contain ${started ? "invisible" : ""}`}
           unoptimized={shouldBypassImageOptimizer(poster)}
           onLoad={(event) => {
@@ -155,11 +159,11 @@ function HeroClickToPlay({
           onClick={() => {
             startPlayback();
           }}
-          className="pointer-events-auto absolute top-1/2 left-1/2 z-10 flex h-20 w-20 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/45 bg-paper/26 text-blush-deep/90 shadow-lg shadow-forest/8 ring-1 ring-white/25 backdrop-blur-xl transition hover:scale-105 hover:bg-paper/38 hover:text-forest focus:outline-none focus-visible:ring-2 focus-visible:ring-forest/45 sm:h-24 sm:w-24"
+          className="hero-play-button pointer-events-auto absolute top-1/2 left-1/2 z-10 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/45 bg-paper/26 text-blush-deep/90 shadow-lg shadow-forest/8 ring-1 ring-white/25 backdrop-blur-xl transition hover:bg-paper/38 hover:text-forest focus:outline-none focus-visible:ring-2 focus-visible:ring-forest/45 active:scale-95 sm:h-24 sm:w-24"
           aria-label="Play hero video"
         >
           <span
-            className="translate-x-0.5 text-4xl leading-none sm:translate-x-1 sm:text-5xl"
+            className="hero-play-mark translate-x-0.5 text-3xl leading-none sm:translate-x-1 sm:text-5xl"
             aria-hidden
           >
             ▶
@@ -175,7 +179,7 @@ function HeroClickToPlay({
           setStarted(true);
           enterFullscreen(video);
         }}
-        className="pointer-events-auto absolute right-3 bottom-3 z-20 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-white/45 bg-paper/26 text-blush-deep/90 shadow-lg shadow-forest/8 ring-1 ring-white/25 backdrop-blur-xl transition hover:scale-105 hover:bg-paper/38 hover:text-forest focus:outline-none focus-visible:ring-2 focus-visible:ring-forest/45 sm:h-14 sm:w-14"
+        className="hero-video-fullscreen pointer-events-auto absolute z-20 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-white/45 bg-paper/26 text-blush-deep/90 shadow-lg shadow-forest/8 ring-1 ring-white/25 backdrop-blur-xl transition hover:bg-paper/38 hover:text-forest focus:outline-none focus-visible:ring-2 focus-visible:ring-forest/45 active:scale-95 sm:h-14 sm:w-14"
         aria-label="Full screen"
       >
         <svg

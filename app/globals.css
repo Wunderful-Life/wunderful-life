@@ -158,15 +158,63 @@ body {
 
 /*
  * The stage uses the clip's own ratio. Width shrinks once the picture would
- * pass 72svh, so a tall clip stays whole without filling the screen.
- * Padding-top % is the Safari-safe aspect box.
+ * pass 72svh, so a tall clip stays whole without filling a desktop screen.
+ * On a portrait phone the cap is high enough that a vertical clip uses the
+ * full screen width. Padding-top % is the Safari-safe aspect box.
  */
 .hero-video-stage {
   width: min(100%, calc(72svh * var(--hero-aspect, 0.5625)));
+  max-width: 100%;
+}
+
+.hero-video-frame {
+  container-type: size;
+  container-name: hero-video;
 }
 
 .hero-video-stage-ratio {
   padding-top: var(--hero-ratio-padding, 177.78%);
+}
+
+@media (max-width: 40rem) and (orientation: portrait) {
+  .hero-video-stage {
+    width: min(100%, calc(92svh * var(--hero-aspect, 0.5625)));
+  }
+}
+
+@media (max-width: 40rem) and (orientation: landscape) {
+  .hero-video-stage {
+    width: min(100%, calc(78svh * var(--hero-aspect, 0.5625)));
+  }
+}
+
+.hero-play-button,
+.hero-video-fullscreen {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hero-video-fullscreen {
+  right: max(0.75rem, env(safe-area-inset-right));
+  bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+/* Phone playback chrome sits on the bottom edge. Lift the button above it. */
+@media (max-width: 40rem) {
+  .is-playing .hero-video-fullscreen {
+    bottom: max(4.5rem, calc(env(safe-area-inset-bottom) + 3.25rem));
+  }
+}
+
+@container hero-video (max-height: 18rem) {
+  .hero-play-button {
+    height: 3.5rem;
+    width: 3.5rem;
+  }
+
+  .hero-play-mark {
+    font-size: 1.5rem;
+  }
 }
 
 .hero-video-sizer-cover {
