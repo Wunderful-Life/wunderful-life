@@ -248,11 +248,11 @@ export function HeroEditor({
           Writing on this page still needs &ldquo;Save site content&rdquo;.
           Use the original 1080p (or higher) file so it stays sharp. The
           soundtrack is kept, and the hero plays it when someone presses play.
-          Clips play once and can be up to one minute. On phones, portrait clips
-          lengthen the hero so the full frame stays visible. On a wide screen
-          they fill the viewport height. Landscape clips always fill the
-          viewport height. The picture is never stretched. Without a video,
-          the hero shows the plant wallpaper.
+          Clips play once and can be up to one minute. The frame shows the
+          whole picture and grows with the clip until it reaches about three
+          quarters of the screen. Full screen opens from the button in the
+          corner. The picture is never stretched. Without a video, the hero
+          shows the plant wallpaper.
         </p>
         <VideoSlotField
           slot="hero"

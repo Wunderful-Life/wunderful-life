@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { PlantSectionBackground } from "@/components/ui/PlantSectionBackground";
 import { useSiteContent } from "@/components/admin/AdminViewProvider";
 import { shouldBypassImageOptimizer } from "@/lib/media/urls";
@@ -13,28 +13,29 @@ type MeasuredMedia = {
   size: MediaIntrinsicSize;
 };
 
-function usePortraitOrientation() {
-  const [isPortrait, setIsPortrait] = useState(false);
-
-  useEffect(() => {
-    const media = window.matchMedia("(orientation: portrait)");
-    const sync = () => setIsPortrait(media.matches);
-    sync();
-    media.addEventListener("change", sync);
-    return () => media.removeEventListener("change", sync);
-  }, []);
-
-  return isPortrait;
-}
+type FullscreenVideo = HTMLVideoElement & {
+  webkitEnterFullscreen?: () => void;
+};
 
 function ratioPaddingTop(size: MediaIntrinsicSize): string {
   if (size.width < 1) return "177.78%";
   return `${(size.height / size.width) * 100}%`;
 }
 
-/** Below center so the short frame holds the cascade instead of the canopy. */
-const HERO_CROP_FOCUS_Y = 0.68;
-const HERO_OBJECT_POSITION = `center ${HERO_CROP_FOCUS_Y * 100}%`;
+function enterFullscreen(video: HTMLVideoElement) {
+  const webkit = video as FullscreenVideo;
+  if (typeof webkit.webkitEnterFullscreen === "function") {
+    try {
+      webkit.webkitEnterFullscreen();
+      return;
+    } catch {
+      // Desktop browsers without the legacy API fall through.
+    }
+  }
+  if (typeof video.requestFullscreen === "function") {
+    void video.requestFullscreen().catch(() => undefined);
+  }
+}
 
 function HeroClickToPlay({
   src,
@@ -50,32 +51,34 @@ function HeroClickToPlay({
   const [playing, setPlaying] = useState(false);
   const [started, setStarted] = useState(false);
 
-  function onPlayClick() {
-    const video = videoRef.current;
-    if (!video) return;
+  function prime(video: HTMLVideoElement) {
     video.muted = false;
     video.defaultMuted = false;
     video.removeAttribute("muted");
     video.volume = 1;
     video.playsInline = true;
-    // The DOM src is absolute after assignment, so compare the path we set.
     if (assignedSrcRef.current !== src || video.error) {
       video.src = src;
       assignedSrcRef.current = src;
-    } else if (video.currentTime !== 0) {
+    } else if (!playing && video.currentTime !== 0) {
       try {
         video.currentTime = 0;
       } catch {
         // Seek throws if metadata is not ready yet.
       }
     }
+  }
+
+  function startPlayback() {
+    const video = videoRef.current;
+    if (!video) return null;
+    prime(video);
     setPlaying(true);
-    // play() has to run in this click. A later effect loses the gesture and
-    // Safari starts the clip muted or not at all.
     void video.play().catch(() => {
       setPlaying(false);
       setStarted(false);
     });
+    return video;
   }
 
   function onEnded() {
@@ -108,9 +111,8 @@ function HeroClickToPlay({
           alt=""
           fill
           priority
-          sizes="100vw"
-          className={`pointer-events-none object-cover ${started ? "invisible" : ""}`}
-          style={{ objectPosition: HERO_OBJECT_POSITION }}
+          sizes="(max-width: 768px) 100vw, 72vh"
+          className={`pointer-events-none object-contain ${started ? "invisible" : ""}`}
           unoptimized={shouldBypassImageOptimizer(poster)}
           onLoad={(event) => {
             const image = event.currentTarget;
@@ -128,20 +130,31 @@ function HeroClickToPlay({
         preload="none"
         playsInline
         controls={started}
+        controlsList="nofullscreen"
         aria-hidden={!started}
         aria-label={started ? "Hero video" : undefined}
-        className={`absolute inset-0 h-full w-full bg-forest-deep object-cover ${
+        className={`absolute inset-0 h-full w-full bg-forest-deep object-contain ${
           started ? "pointer-events-auto" : "pointer-events-none opacity-0"
         }`}
-        style={{ objectPosition: HERO_OBJECT_POSITION }}
         onPlaying={() => setStarted(true)}
+        onLoadedMetadata={(event) => {
+          const media = event.currentTarget;
+          if (media.videoWidth > 0 && media.videoHeight > 0) {
+            onIntrinsicSize({
+              width: media.videoWidth,
+              height: media.videoHeight,
+            });
+          }
+        }}
         onEnded={onEnded}
         onError={onPlaybackError}
       />
       {playing ? null : (
         <button
           type="button"
-          onClick={onPlayClick}
+          onClick={() => {
+            startPlayback();
+          }}
           className="pointer-events-auto absolute top-1/2 left-1/2 z-10 flex h-20 w-20 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/45 bg-paper/26 text-blush-deep/90 shadow-lg shadow-forest/8 ring-1 ring-white/25 backdrop-blur-xl transition hover:scale-105 hover:bg-paper/38 hover:text-forest focus:outline-none focus-visible:ring-2 focus-visible:ring-forest/45 sm:h-24 sm:w-24"
           aria-label="Play hero video"
         >
@@ -153,6 +166,29 @@ function HeroClickToPlay({
           </span>
         </button>
       )}
+      <button
+        type="button"
+        onClick={() => {
+          const video = startPlayback();
+          if (!video) return;
+          video.style.opacity = "1";
+          setStarted(true);
+          enterFullscreen(video);
+        }}
+        className="pointer-events-auto absolute right-3 bottom-3 z-20 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-white/45 bg-paper/26 text-blush-deep/90 shadow-lg shadow-forest/8 ring-1 ring-white/25 backdrop-blur-xl transition hover:scale-105 hover:bg-paper/38 hover:text-forest focus:outline-none focus-visible:ring-2 focus-visible:ring-forest/45 sm:h-14 sm:w-14"
+        aria-label="Full screen"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          className="h-5 w-5 sm:h-6 sm:w-6"
+          aria-hidden
+        >
+          <path
+            fill="currentColor"
+            d="M4 9V4h5v2H6v3H4zm11-5h5v5h-2V6h-3V4zM4 15h2v3h3v2H4v-5zm14 3v-3h2v5h-5v-2h3z"
+          />
+        </svg>
+      </button>
     </div>
   );
 }
@@ -163,7 +199,6 @@ export function HeroVideoSection() {
   const videoPath = site.hero.videoPath;
   const posterPath = site.hero.posterPath;
   const hasVideo = Boolean(videoPath);
-  const hasPoster = Boolean(posterPath);
   const mediaSourceKey = `${videoPath ?? ""}\u0000${posterPath ?? ""}`;
   const [mediaSize, setMediaSize] = useState<MeasuredMedia | null>(null);
   const mediaSizeForSource =
@@ -185,56 +220,40 @@ export function HeroVideoSection() {
     [mediaSourceKey],
   );
 
-  const isPortraitOrientation = usePortraitOrientation();
-  const knownLandscape = Boolean(
-    mediaSizeForSource &&
-      mediaSizeForSource.width >= mediaSizeForSource.height,
-  );
-  // Portrait clips size from their own ratio. On a wide desktop that box is
-  // thousands of pixels tall, so landscape uses the fixed cover frame.
-  const useExactRatio = Boolean(
-    hasVideo && isPortraitOrientation && !knownLandscape,
-  );
   const sizerSize = mediaSizeForSource ?? { width: 9, height: 16 };
 
   return (
-    <section
-      className="hero-video-band relative z-20 w-full overflow-hidden bg-forest-deep"
-      data-exact={useExactRatio ? "true" : "false"}
-      data-has-ratio={hasVideo ? "true" : "false"}
-    >
-      {/*
-        In-flow padding-top box. A grid item with aspect-ratio is ignored in
-        Safari, which left vertical clips in a fixed cover frame and cropped
-        the top and bottom. Frame height is 70% of that original size.
-      */}
-      <div className="hero-video-sizers w-full min-w-0">
-        {hasVideo ? (
-          <div
-            aria-hidden
-            className="hero-video-sizer-exact w-full"
-            style={{
-              ["--hero-ratio-padding" as string]: ratioPaddingTop(sizerSize),
-            }}
-          />
-        ) : null}
-        <div aria-hidden className="hero-video-sizer-cover w-full" />
-      </div>
-
-      <div className="pointer-events-none absolute inset-0 z-0">
-        <PlantSectionBackground
-          wallpaper={wallpaper}
-          overlay={hasVideo && hasPoster ? "none" : overlay}
-        />
-        {hasVideo && videoPath ? (
+    <section className="hero-video-band relative z-20 w-full overflow-hidden bg-forest-deep">
+      {hasVideo && videoPath ? (
+        <div
+          className="hero-video-stage relative mx-auto"
+          style={{
+            ["--hero-aspect" as string]: String(
+              sizerSize.width / sizerSize.height,
+            ),
+            ["--hero-ratio-padding" as string]: ratioPaddingTop(sizerSize),
+          }}
+        >
+          {/*
+            In-flow padding-top box. A grid item with aspect-ratio is ignored
+            in Safari, which left the clip cropped inside a short wide frame.
+          */}
+          <div aria-hidden className="hero-video-stage-ratio w-full" />
           <HeroClickToPlay
             key={videoPath}
             src={videoPath}
             poster={posterPath}
             onIntrinsicSize={onIntrinsicSize}
           />
-        ) : null}
-      </div>
+        </div>
+      ) : (
+        <>
+          <div aria-hidden className="hero-video-sizer-cover w-full" />
+          <div className="pointer-events-none absolute inset-0 z-0">
+            <PlantSectionBackground wallpaper={wallpaper} overlay={overlay} />
+          </div>
+        </>
+      )}
     </section>
   );
 }

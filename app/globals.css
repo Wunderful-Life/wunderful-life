@@ -157,49 +157,21 @@ body {
 
 
 /*
- * Hero video band: only one sizer is visible. Exact ratio uses padding-top %
- * so a vertical clip lengthens the section instead of cover-cropping.
- * Both frames are 70% of that height. The clip stays full-bleed on the
- * sides and only the vertical crop changes.
+ * The stage uses the clip's own ratio. Width shrinks once the picture would
+ * pass 72svh, so a tall clip stays whole without filling the screen.
+ * Padding-top % is the Safari-safe aspect box.
  */
-.hero-video-sizer-exact {
-  display: none;
-  padding-top: calc(var(--hero-ratio-padding) * 0.7);
+.hero-video-stage {
+  width: min(100%, calc(72svh * var(--hero-aspect, 0.5625)));
+}
+
+.hero-video-stage-ratio {
+  padding-top: var(--hero-ratio-padding, 177.78%);
 }
 
 .hero-video-sizer-cover {
   display: block;
   min-height: calc(85svh * 0.7);
-}
-
-.hero-video-band[data-exact="true"] .hero-video-sizer-exact {
-  display: block;
-}
-
-.hero-video-band[data-exact="true"] .hero-video-sizer-cover {
-  display: none;
-}
-
-@media (orientation: landscape) {
-  .hero-video-band[data-exact="true"] .hero-video-sizer-exact,
-  .hero-video-band[data-has-ratio="true"] .hero-video-sizer-exact {
-    display: none;
-  }
-
-  .hero-video-band[data-exact="true"] .hero-video-sizer-cover,
-  .hero-video-band[data-has-ratio="true"] .hero-video-sizer-cover {
-    display: block;
-  }
-}
-
-@media (orientation: portrait) {
-  .hero-video-band[data-has-ratio="true"] .hero-video-sizer-exact {
-    display: block;
-  }
-
-  .hero-video-band[data-has-ratio="true"] .hero-video-sizer-cover {
-    display: none;
-  }
 }
 
 /* Padding-top sets the frame height. Clip the fill image so it cannot cover the page. */
