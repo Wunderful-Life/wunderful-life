@@ -13,7 +13,7 @@ export const COLLAGE_GRID_CLASS =
   "grid auto-rows-[minmax(0,7rem)] grid-flow-row-dense grid-cols-3 gap-2 sm:auto-rows-[minmax(0,9rem)] sm:grid-cols-4 sm:gap-3";
 
 export const COLLAGE_TILE_FRAME_CLASS =
-  "relative h-full w-full overflow-hidden rounded-2xl border border-white/60 bg-paper/40 shadow-sm";
+  "clipped-media-frame relative h-full w-full min-h-0 min-w-0 overflow-hidden rounded-2xl border border-white/60 bg-paper/40 shadow-sm";
 
 export function CollageTileMedia({
   photo,
@@ -32,6 +32,16 @@ export function CollageTileMedia({
         decoding="async"
         unoptimized={shouldBypassImageOptimizer(photo.imagePath)}
         className="object-cover"
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          maxWidth: "100%",
+          maxHeight: "100%",
+          objectFit: "cover",
+        }}
       />
     );
   }

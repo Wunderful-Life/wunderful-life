@@ -159,11 +159,11 @@ function HeroClickToPlay({
           onClick={() => {
             startPlayback();
           }}
-          className="hero-play-button pointer-events-auto absolute top-1/2 left-1/2 z-10 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/45 bg-paper/26 text-blush-deep/90 shadow-lg shadow-forest/8 ring-1 ring-white/25 backdrop-blur-xl transition hover:bg-paper/38 hover:text-forest focus:outline-none focus-visible:ring-2 focus-visible:ring-forest/45 active:scale-95 sm:h-24 sm:w-24"
+          className="hero-play-button pointer-events-auto absolute top-1/2 left-1/2 z-10 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/45 bg-paper/26 text-blush-deep/90 shadow-lg shadow-forest/8 ring-1 ring-white/25 backdrop-blur-xl transition hover:bg-paper/38 hover:text-forest focus:outline-none focus-visible:ring-2 focus-visible:ring-forest/45 active:scale-95 lg:h-24 lg:w-24"
           aria-label="Play hero video"
         >
           <span
-            className="hero-play-mark translate-x-0.5 text-3xl leading-none sm:translate-x-1 sm:text-5xl"
+            className="hero-play-mark translate-x-0.5 text-3xl leading-none lg:translate-x-1 lg:text-5xl"
             aria-hidden
           >
             ▶

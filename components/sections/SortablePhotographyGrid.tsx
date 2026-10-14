@@ -81,7 +81,7 @@ export function SortablePhotographyGrid({
           const isOver = overId === photo.id && draggingId !== photo.id;
 
           return (
-            <div key={photo.id} className={`${SHAPE_SPAN[photo.shape]} min-h-0`}>
+            <div key={photo.id} className={`${SHAPE_SPAN[photo.shape]} min-h-0 min-w-0 overflow-hidden`}>
               <button
                 type="button"
                 {...drag}

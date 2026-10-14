@@ -52,7 +52,11 @@ const imageSizes: Record<EmilyPhotoSize, string> = {
 
 type ShapedFrame = Exclude<AboutPhotoFrame, "polaroid">;
 
-/** Height as a percentage of width. Padding, not aspect-ratio: Safari drops aspect-ratio and a fill image then covers the page. */
+/**
+ * Height as a percentage of width. An in-flow sizer, not aspect-ratio:
+ * Safari drops aspect-ratio, then a fill image uses its intrinsic size and
+ * covers the page.
+ */
 const shapedFramePadding: Record<ShapedFrame, string> = {
   arch: "133.333%",
   oval: "125%",
@@ -113,6 +117,17 @@ function PhotoMedia({
         decoding="async"
         unoptimized={shouldBypassImageOptimizer(photo.imagePath)}
         className="object-cover object-[center_22%]"
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          maxWidth: "100%",
+          maxHeight: "100%",
+          objectFit: "cover",
+          objectPosition: "center 22%",
+        }}
       />
     );
   }
@@ -137,9 +152,30 @@ function PhotoWindow({
   children: ReactNode;
 }) {
   return (
-    <div className={`emily-photo-window relative w-full overflow-hidden ${className}`}>
-      <div className="w-full" style={{ paddingTop }} />
-      <div className="absolute inset-0">{children}</div>
+    <div
+      className={`emily-photo-window relative w-full min-w-0 overflow-hidden ${className}`}
+      style={{
+        position: "relative",
+        width: "100%",
+        minWidth: 0,
+        overflow: "hidden",
+        contain: "inline-size",
+      }}
+    >
+      <div aria-hidden style={{ display: "block", width: "100%", paddingTop }} />
+      <div
+        className="absolute inset-0 overflow-hidden"
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          overflow: "hidden",
+        }}
+      >
+        {children}
+      </div>
     </div>
   );
 }
@@ -159,7 +195,7 @@ function PolaroidPhoto({
 
   return (
     <figure
-      className={`max-w-full ${sizeClasses[size]} ${polaroidPadClasses[size]} rotate-[var(--photo-rotate)] rounded-sm border border-white/90 bg-paper ${showShadow ? POLAROID_SHADOW : ""} ring-1 ring-lavender/20 ${className}`}
+      className={`min-w-0 max-w-full ${sizeClasses[size]} ${polaroidPadClasses[size]} rotate-[var(--photo-rotate)] rounded-sm border border-white/90 bg-paper ${showShadow ? POLAROID_SHADOW : ""} ring-1 ring-lavender/20 ${className}`}
       style={{ ["--photo-rotate" as string]: `${photo.rotate}deg` }}
     >
       <PhotoWindow
@@ -191,7 +227,7 @@ function ShapedPhoto({
   const showShadow = resolveAboutPhotoShowShadow(photo.showShadow);
 
   return (
-    <figure className={`max-w-full ${sizeClasses[size]} ${className}`}>
+    <figure className={`min-w-0 max-w-full ${sizeClasses[size]} ${className}`}>
       <PhotoWindow
         paddingTop={shapedFramePadding[frame]}
         className={`bg-gradient-to-br ${PHOTO_FRAME_GRADIENT} ${shapedWindowClasses[frame]} ${

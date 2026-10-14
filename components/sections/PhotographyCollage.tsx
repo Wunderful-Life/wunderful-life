@@ -120,7 +120,7 @@ export function PhotographyCollage() {
                       <StaggerItem
                         key={photo.id}
                         variant={COLLAGE_REVEALS[index % COLLAGE_REVEALS.length] ?? "fadeUp"}
-                        className={`${SHAPE_SPAN[photo.shape]} min-h-0`}
+                        className={`${SHAPE_SPAN[photo.shape]} min-h-0 min-w-0 overflow-hidden`}
                       >
                         <div className={COLLAGE_TILE_FRAME_CLASS}>
                           <CollageTileMedia photo={photo} />

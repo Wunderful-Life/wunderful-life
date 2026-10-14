@@ -12,7 +12,9 @@ import { sectionText } from "@/lib/sectionText";
 export function MoreEmilySection() {
   const site = useSiteContent();
   const text = sectionText.about;
-  const galleryPhotos = site.about.photos.slice(2);
+  const galleryPhotos = site.about.photos
+    .slice(2)
+    .filter((photo) => photo.imagePath);
 
   if (galleryPhotos.length === 0) {
     return null;
@@ -34,7 +36,7 @@ export function MoreEmilySection() {
           </h2>
         </SectionReveal>
         <DeferredMount className="min-h-[20rem] sm:min-h-[24rem]">
-          <StaggerChildren className="mx-auto mt-8 grid max-w-5xl grid-cols-2 justify-items-center gap-x-6 gap-y-10 sm:mt-10 sm:gap-x-10 lg:grid-cols-4">
+          <StaggerChildren className="mx-auto mt-8 grid w-full min-w-0 max-w-5xl grid-cols-2 justify-items-center gap-x-6 gap-y-10 sm:mt-10 sm:gap-x-10 lg:grid-cols-4">
             {galleryPhotos.map((photo, index) => (
               <StaggerItem
                 key={photo.id}
@@ -45,7 +47,7 @@ export function MoreEmilySection() {
                       ? "fadeRight"
                       : "fadeUp"
                 }
-                className="w-full max-w-[260px] sm:max-w-[290px]"
+                className="w-full min-w-0 max-w-[260px] sm:max-w-[290px]"
               >
                 <EmilyPhoto photo={photo} size="md" className="mx-auto" />
               </StaggerItem>
