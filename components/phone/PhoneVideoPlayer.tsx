@@ -187,7 +187,7 @@ export function PhoneVideoPlayer({
           {linkToDetail && (
             <Link
               href={`/work/${video.slug}`}
-              className={`mt-1 inline-block ${caption.link}`}
+              className={`mt-1 inline-flex min-h-11 items-center justify-center px-3 ${caption.link}`}
             >
               View details
             </Link>

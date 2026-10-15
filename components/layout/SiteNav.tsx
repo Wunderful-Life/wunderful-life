@@ -82,7 +82,7 @@ export function SiteNav() {
           </span>
         </SectionLink>
 
-        <nav className="ml-auto hidden shrink-0 items-center gap-4 md:flex lg:gap-6">
+        <nav className="ml-auto hidden shrink-0 items-center gap-6 lg:flex">
           {site.heroLinks.map((link) =>
             isContactLink(link) ? (
               <AnimatedButton key={link.href} href={link.href} variant="nav">
@@ -104,7 +104,7 @@ export function SiteNav() {
 
         <button
           type="button"
-          className="relative z-10 ml-auto shrink-0 rounded-lg border border-white/50 bg-white/50 px-3 py-2 text-sm text-ink md:hidden"
+          className="relative z-10 ml-auto inline-flex min-h-11 shrink-0 items-center rounded-lg border border-white/50 bg-white/50 px-3 text-sm text-ink lg:hidden"
           aria-expanded={menuOpen}
           aria-controls="site-nav-menu"
           onPointerDown={(event) => event.stopPropagation()}
@@ -117,7 +117,7 @@ export function SiteNav() {
       <nav
         id="site-nav-menu"
         hidden={!menuOpen}
-        className="border-t border-white/30 bg-paper/80 md:hidden"
+        className="border-t border-white/30 bg-paper/80 lg:hidden"
       >
         <div className="flex flex-col gap-1 px-4 py-3 sm:px-6">
           {site.heroLinks.map((link) =>
@@ -126,7 +126,7 @@ export function SiteNav() {
                 key={link.href}
                 href={link.href}
                 variant="nav"
-                className="mt-1"
+                className="mt-1 min-h-11 px-4"
                 onClick={() => setMenuOpen(false)}
               >
                 {link.label}
@@ -136,7 +136,7 @@ export function SiteNav() {
                 key={link.href}
                 href={link.href}
                 onClick={() => setMenuOpen(false)}
-                className="rounded-lg px-3 py-2 text-sm font-medium text-ink hover:bg-white/20 hover:text-forest"
+                className="flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-ink hover:bg-white/20 hover:text-forest"
               >
                 {link.label}
               </SectionLink>
