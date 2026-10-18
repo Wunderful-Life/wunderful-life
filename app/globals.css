@@ -1566,7 +1566,8 @@ body {
     var(--hero-visual-height) - var(--portrait-top) + var(--portrait-tuck)
   );
   overflow: visible;
-  translate: -50% 0;
+  /* 4% of the cutout sits under the forest belt so the PNG cannot leave a seam. */
+  translate: -50% 4%;
 }
 
 .hero-intro-creator-image {
